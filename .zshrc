@@ -16,6 +16,7 @@ export EDITOR='nano'
 alias l="ls" # List files in current directory
 alias ll="ls -al" # List all files in current directory in long list format
 alias o="open ." # Open the current directory in Finder
+alias dtable='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"'
 
 # ----------------------
 # Git Aliases
@@ -34,3 +35,8 @@ fi
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+## fabric config
+# export OPENAI_BASE_URL=https://YOUR-SERVER:8000/v1/
+# export DEFAULT_MODEL="YOUR_MODEL"
+# if [ -f "/Users/[UserName]/.config/fabric/fabric-bootstrap.inc" ]; then . "/Users/[UserName]/.config/fabric/fabric-bootstrap.inc"; fi
