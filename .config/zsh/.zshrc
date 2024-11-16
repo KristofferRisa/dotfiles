@@ -8,7 +8,7 @@ plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
 
-export EDITOR='nano'
+export EDITOR='nvim'
 
 # -------
 # Aliases
@@ -18,6 +18,7 @@ alias ll="ls -al" # List all files in current directory in long list format
 alias o="open ." # Open the current directory in Finder
 alias dtable='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"'
 alias dstart='docker compose up -d && docker compose logs -f -n 1000'
+alias n='nvim .'
 
 # ----------------------
 # Git Aliases
