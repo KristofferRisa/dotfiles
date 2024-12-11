@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# fabyt: Simplifies fabric CLI command, streams content, and writes output to a Markdown file.
+# fabyt: Simplifies fabric CLI command, streams content, and writes output to a Markdown file with metadata.
 
 # Function to check if a command exists
 check_dependency() {
@@ -27,6 +27,10 @@ is_valid_youtube_url() {
 # Dependency checks
 check_dependency "fabric"
 check_dependency "yt-dlp"
+
+# Update fabric to the latest patterns
+echo "Updating fabric patterns..."
+fabric -U
 
 # Check if a valid URL is provided
 if [ -z "$1" ] || ! is_valid_youtube_url "$1"; then
@@ -65,6 +69,21 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Rename the output file
-mv "$TEMP_OUTPUT" "$OUTPUT_FILENAME"
+# Add metadata to the output file
+echo "Adding metadata to the output file..."
+
+METADATA="---
+tags:
+  - fabric-summary
+url: $YOUTUBE_URL
+---
+"
+
+# Combine metadata and output
+FINAL_OUTPUT=$(cat "$TEMP_OUTPUT")
+echo -e "$METADATA\n$FINAL_OUTPUT" > "$OUTPUT_FILENAME"
+
+# Clean up temporary file
+rm -f "$TEMP_OUTPUT"
+
 echo "✅ Output saved to: $OUTPUT_FILENAME"
