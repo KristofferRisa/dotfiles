@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# fabyt: Simplifies fabric CLI command, streams content, and writes output to a Markdown file.
+
+# Function to check if a command exists
+check_dependency() {
+  if ! command -v "$1" >/dev/null; then
+    echo "Error: '$1' is not installed. Please install it:"
+    case "$1" in
+      fabric)
+        echo "  pip install fabric-cli"
+        ;;
+      yt-dlp)
+        echo "  brew install yt-dlp    # For macOS"
+        echo "  sudo apt install yt-dlp # For Ubuntu/Debian"
+        ;;
+    esac
+    exit 1
+  fi
+}
+
+# Function to validate YouTube URL
+is_valid_youtube_url() {
+  [[ "$1" =~ ^https://www\.youtube\.com/watch\?v=.*$ ]]
+}
+
+# Dependency checks
+check_dependency "fabric"
+check_dependency "yt-dlp"
+
+# Check if a valid URL is provided
+if [ -z "$1" ] || ! is_valid_youtube_url "$1"; then
+  echo "Usage: fabyt <Valid YouTube URL>"
+  echo "Example: fabyt https://www.youtube.com/watch?v=ZAdg63nVhZg"
+  exit 1
+fi
+
+# Set variables
+YOUTUBE_URL="$1"
+PARAMS="-p extract_wisdom -m gpt-4o"
+TEMP_OUTPUT="temp_fabric_output.txt"
+
+# Fetch YouTube video title using yt-dlp
+echo "Fetching video title..."
+VIDEO_TITLE=$(yt-dlp --get-title "$YOUTUBE_URL" 2>/dev/null)
+
+if [ -z "$VIDEO_TITLE" ]; then
+  echo "Error: Unable to fetch video title. Falling back to 'fabric_output'."
+  SAFE_TITLE="fabric_output"
+else
+  # Sanitize the title for the filename
+  SAFE_TITLE=$(echo "$VIDEO_TITLE" | sed 's/[^a-zA-Z0-9_-]/_/g')
+fi
+
+OUTPUT_FILENAME="${SAFE_TITLE}.md"
+
+# Run the fabric command, stream output, and save it to a file
+echo "Running fabric command and streaming output..."
+fabric -y "$YOUTUBE_URL" $PARAMS | tee "$TEMP_OUTPUT"
+
+# Check for errors in the fabric command
+if [ $? -ne 0 ]; then
+  echo "Error: Fabric command failed. Exiting."
+  rm -f "$TEMP_OUTPUT"
+  exit 1
+fi
+
+# Rename the output file
+mv "$TEMP_OUTPUT" "$OUTPUT_FILENAME"
+echo "✅ Output saved to: $OUTPUT_FILENAME"
