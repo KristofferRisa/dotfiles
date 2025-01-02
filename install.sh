@@ -23,9 +23,7 @@ git clone --recurse-submodules https://github.com/kristofferrisa/dotfiles.git ~/
 cd ~/dotfiles
 
 # Stow configurations
-stow -t ~ .config/nvim
-stow -t ~ .config/tmux
-stow -t ~ .config/zsh
+stow -t ~/.config .config
 stow -t ~ bin
 
 echo "Dotfiles and Neovim setup complete. Run ':PackerSync' in Neovim to install plugins."
