@@ -41,7 +41,8 @@ fi
 
 # Set variables
 YOUTUBE_URL="$1"
-PARAMS="-p extract_wisdom -m gpt-4o"
+# PARAMS="-p extract_wisdom -m gpt-4o"
+PARAMS="-p create_summary -m gpt-4o"
 TEMP_OUTPUT="temp_fabric_output.txt"
 
 # Fetch YouTube video title using yt-dlp
