@@ -26,4 +26,6 @@ cd ~/dotfiles
 stow -t ~/.config .config
 stow -t ~ bin
 
+## Refresh stow config run: stow -t ~/.config .config
+
 echo "Dotfiles and Neovim setup complete. Run ':PackerSync' in Neovim to install plugins."
