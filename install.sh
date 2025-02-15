@@ -1,31 +1,34 @@
 #!/bin/bash
-
-# Exit immediately if a command exits with a non-zero status
 set -e
 
-
-# Install basic dependencies (adjust as needed)
 echo "Installing dependencies..."
 sudo apt update
 sudo apt install -y git curl wget unzip neovim
 
-# Install packer.nvim package manager for Neovim
-PACKER_DIR="$HOME/.local/share/nvim/site/pack/packer/start/packer.nvim"
-if [ ! -d "$PACKER_DIR" ]; then
-    echo "Installing packer.nvim..."
-    git clone --depth 1 https://github.com/wbthomason/packer.nvim "$PACKER_DIR"
+# Clone the dotfiles repository (if not already present)
+if [ ! -d "$HOME/dotfiles" ]; then
+  git clone --recurse-submodules https://github.com/kristofferrisa/dotfiles.git ~/dotfiles
 fi
-
-# Clone the dotfiles repository
-git clone --recurse-submodules https://github.com/kristofferrisa/dotfiles.git ~/dotfiles
 
 # Navigate to the dotfiles directory
 cd ~/dotfiles
 
-# Stow configurations
-stow -t ~/.config .config
+# Remove the old custom Neovim configuration (if any)
+rm -rf ~/.config/nvim
+
+# Clone LazyVim's starter configuration into ~/.config/nvim
+echo "Installing LazyVim configuration..."
+git clone https://github.com/LazyVim/starter ~/.config/nvim
+
+# If you have custom LazyVim overrides, you can symlink them in.
+# For example, if you moved your overrides to dotfiles/nvim-custom:
+# rm -rf ~/.config/nvim/lua/custom
+# ln -s ~/dotfiles/nvim-custom ~/.config/nvim/lua/custom
+
+# Stow other configurations
 stow -t ~ bin
+# If you previously stowed a .config directory that included your old nvim config,
+# ensure that you remove or skip stowing the nvim part:
+# stow -t ~/.config some-other-config-folder
 
-## Refresh stow config run: stow -t ~/.config .config
-
-echo "Dotfiles and Neovim setup complete. Run ':PackerSync' in Neovim to install plugins."
+echo "Dotfiles and LazyVim setup complete. Launch Neovim to finish the plugin setup."
