@@ -26,9 +26,7 @@ git clone https://github.com/LazyVim/starter ~/.config/nvim
 # ln -s ~/dotfiles/nvim-custom ~/.config/nvim/lua/custom
 
 # Stow other configurations
-stow -t ~ bin
-# If you previously stowed a .config directory that included your old nvim config,
-# ensure that you remove or skip stowing the nvim part:
-# stow -t ~/.config some-other-config-folder
+stow -R -t ~/.local/bin bin
+stow -t ~/.config ./config
 
 echo "Dotfiles and LazyVim setup complete. Launch Neovim to finish the plugin setup."
