@@ -7,13 +7,13 @@ check_dependency() {
   if ! command -v "$1" >/dev/null; then
     echo "Error: '$1' is not installed. Please install it:"
     case "$1" in
-      fabric)
-        echo "  pip install fabric-cli"
-        ;;
-      yt-dlp)
-        echo "  brew install yt-dlp    # For macOS"
-        echo "  sudo apt install yt-dlp # For Ubuntu/Debian"
-        ;;
+    fabric)
+      echo "  pip install fabric-cli"
+      ;;
+    yt-dlp)
+      echo "  brew install yt-dlp    # For macOS"
+      echo "  sudo apt install yt-dlp # For Ubuntu/Debian"
+      ;;
     esac
     exit 1
   fi
@@ -29,8 +29,8 @@ check_dependency "fabric"
 check_dependency "yt-dlp"
 
 # Update fabric to the latest patterns
-echo "Updating fabric patterns..."
-fabric -U
+# echo "Updating fabric patterns..."
+# fabric -U
 
 # Check if a valid URL is provided
 if [ -z "$1" ] || ! is_valid_youtube_url "$1"; then
@@ -82,7 +82,7 @@ url: $YOUTUBE_URL
 
 # Combine metadata and output
 FINAL_OUTPUT=$(cat "$TEMP_OUTPUT")
-echo -e "$METADATA\n$FINAL_OUTPUT" > "$OUTPUT_FILENAME"
+echo -e "$METADATA\n$FINAL_OUTPUT" >"$OUTPUT_FILENAME"
 
 # Clean up temporary file
 rm -f "$TEMP_OUTPUT"
