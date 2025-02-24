@@ -1,48 +1,44 @@
 #!/bin/bash
+# fabyt: Extracts knowledge from YouTube videos using Fabric and a specified LLM model.
+# Check for missing dependencies
+for dep in fabric yt-dlp; do
+  command -v "$dep" >/dev/null || echo "Warning: '$dep' is not installed."
+done
 
-# fabyt: Simplifies fabric CLI command, streams content, and writes output to a Markdown file with metadata.
-
-# Function to check if a command exists
-check_dependency() {
-  if ! command -v "$1" >/dev/null; then
-    echo "Error: '$1' is not installed. Please install it:"
-    case "$1" in
-    fabric)
-      echo "  pip install fabric-cli"
-      ;;
-    yt-dlp)
-      echo "  brew install yt-dlp    # For macOS"
-      echo "  sudo apt install yt-dlp # For Ubuntu/Debian"
-      ;;
-    esac
-    exit 1
-  fi
+# Validate YouTube URL
+[[ "$1" =~ ^https://www\.youtube\.com/watch\?v=.*$ ]] || {
+  echo "Usage: fabyt <YouTube URL>"
+  exit 1
 }
 
-# Function to validate YouTube URL
-is_valid_youtube_url() {
-  [[ "$1" =~ ^https://www\.youtube\.com/watch\?v=.*$ ]]
-}
+# Check if user asked for help
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  echo "Usage: fabyt <YouTube URL>"
+  echo "Options:"
+  echo "  -h, --help          Show this help message and exit."
+  echo "Parameter Handling:"
+  echo "  - Default parameters: \"$DEFAULT_PARAMS\""
+  echo "  - Override using the environment variable FABYT_PARAMS"
+  echo "Examples:"
+  echo "  fabyt https://www.youtube.com/watch?v=ZAdg63nVhZg    # Uses default params"
+  echo "  export FABYT_PARAMS='-p custom_task' fabyt <URL>            # Uses env variable"
+  exit 0
+fi
 
-# Dependency checks
-check_dependency "fabric"
-check_dependency "yt-dlp"
-
-# Update fabric to the latest patterns
-# echo "Updating fabric patterns..."
-# fabric -U
-
-# Check if a valid URL is provided
+# Ensure a YouTube URL is provided
 if [ -z "$1" ] || ! is_valid_youtube_url "$1"; then
-  echo "Usage: fabyt <Valid YouTube URL>"
-  echo "Example: fabyt https://www.youtube.com/watch?v=ZAdg63nVhZg"
+  echo "Error: A valid YouTube URL is required."
+  print_help
   exit 1
 fi
 
-# Set variables
 YOUTUBE_URL="$1"
-# PARAMS="-p extract_wisdom -m gpt-4o"
-PARAMS="-p create_summary -m gpt-4o"
+# Default parameters
+DEFAULT_PARAMS="-p create_summary -m gpt-4o"
+# Allow override via environment variable, otherwise use default
+PARAMS="${FABYT_PARAMS:-$DEFAULT_PARAMS}"
+echo "Using params: $PARAMS"
+
 TEMP_OUTPUT="temp_fabric_output.txt"
 
 # Fetch YouTube video title using yt-dlp
@@ -53,7 +49,7 @@ if [ -z "$VIDEO_TITLE" ]; then
   echo "Error: Unable to fetch video title. Falling back to 'fabric_output'."
   SAFE_TITLE="fabric_output"
 else
-  # Sanitize the title for the filename
+  # Sanitize the title for filename usage
   SAFE_TITLE=$(echo "$VIDEO_TITLE" | sed 's/[^a-zA-Z0-9_-]/_/g')
 fi
 
@@ -69,10 +65,7 @@ if [ $? -ne 0 ]; then
   rm -f "$TEMP_OUTPUT"
   exit 1
 fi
-
-# Add metadata to the output file
 echo "Adding metadata to the output file..."
-
 METADATA="---
 tags:
   - fabric-summary
@@ -86,5 +79,4 @@ echo -e "$METADATA\n$FINAL_OUTPUT" >"$OUTPUT_FILENAME"
 
 # Clean up temporary file
 rm -f "$TEMP_OUTPUT"
-
 echo "✅ Output saved to: $OUTPUT_FILENAME"
