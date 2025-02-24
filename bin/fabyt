@@ -5,12 +5,6 @@ for dep in fabric yt-dlp; do
   command -v "$dep" >/dev/null || echo "Warning: '$dep' is not installed."
 done
 
-# Validate YouTube URL
-[[ "$1" =~ ^https://www\.youtube\.com/watch\?v=.*$ ]] || {
-  echo "Usage: fabyt <YouTube URL>"
-  exit 1
-}
-
 # Check if user asked for help
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
   echo "Usage: fabyt <YouTube URL>"
@@ -25,15 +19,12 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
   exit 0
 fi
 
-# Ensure a YouTube URL is provided
-if [ -z "$1" ] || ! is_valid_youtube_url "$1"; then
-  echo "Error: A valid YouTube URL is required."
-  print_help
+# Validate YouTube URL
+[[ "$1" =~ ^https://www\.youtube\.com/watch\?v=.*$ ]] || {
+  echo "Usage: fabyt <YouTube URL>"
   exit 1
-fi
-
+}
 YOUTUBE_URL="$1"
-# Default parameters
 DEFAULT_PARAMS="-p create_summary -m gpt-4o"
 # Allow override via environment variable, otherwise use default
 PARAMS="${FABYT_PARAMS:-$DEFAULT_PARAMS}"
