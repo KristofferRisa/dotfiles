@@ -25,7 +25,7 @@ fi
   exit 1
 }
 YOUTUBE_URL="$1"
-DEFAULT_PARAMS="-p create_summary -m gpt-4o"
+DEFAULT_PARAMS="-p create_summary -m GPT-5 nano"
 # Allow override via environment variable, otherwise use default
 PARAMS="${FABYT_PARAMS:-$DEFAULT_PARAMS}"
 echo "Using params: $PARAMS"
