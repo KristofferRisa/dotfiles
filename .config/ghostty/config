@@ -1,5 +1,5 @@
-#theme = dark:Raycast_Dark,light:catppuccin-latte #dark:vesper,light:catppuccin-latte
-theme = Github Dark
+#theme = dark:,light:catppuccin-latte #dark:vesper,light:catppuccin-latte
+theme = Catppuccin Mocha
 #background = 282c34
 #foreground = ffffff
 
