@@ -1,7 +1,7 @@
 ---
 description: Your everyday companion for tasks, questions, and assistance
 mode: primary
-model: anthropic/claude-sonnet-4-5
+model: anthropic/claude-sonnet-4-5-20250929
 temperature: 0.4
 tools:
   write: false
