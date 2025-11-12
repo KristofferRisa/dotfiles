@@ -1,2 +1,7 @@
 node_modules/
 .DS_Store
+.claude/file-history
+.claude/projects
+.claude/shell-snapshots
+.claude/statsig
+.claude/todos
