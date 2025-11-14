@@ -1,0 +1,35 @@
+# Output files (user-specific)
+output/*
+!output/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
+
+# Personal notes (optional - uncomment if you want to keep these private)
+# personal/
+
+# Cache
+__pycache__/
+*.pyc
+.cache/
+
+# Transcripts (can be large)
+*.vtt
+*.srt
