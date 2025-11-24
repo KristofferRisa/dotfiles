@@ -44,4 +44,4 @@ fi
 # if [ -f "/Users/[UserName]/.config/fabric/fabric-bootstrap.inc" ]; then . "/Users/[UserName]/.config/fabric/fabric-bootstrap.inc"; fi
 
 # Source the Tmux-related Zsh configurations
-source ~/dotfiles/zsh/tmux.zsh
+source ~/.config/zsh/tmux.zsh
