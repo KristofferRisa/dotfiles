@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Script to reinstall Claude Code
+# Run this before opening a Claude Code instance if experiencing issues
+
+set -e
+
+echo "🔄 Reinstalling Claude Code..."
+
+# Uninstall existing version
+echo "📦 Uninstalling current version..."
+sudo npm uninstall -g @anthropic-ai/claude-code || true
+
+# Reinstall Claude Code
+echo "📥 Installing latest version..."
+sudo npm i -g @anthropic-ai/claude-code
+
+echo "✅ Claude Code has been successfully reinstalled!"
+echo "   You can now use 'c' or 'cc' commands."
