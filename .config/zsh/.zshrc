@@ -1,7 +1,7 @@
 export ZSH="$HOME/.oh-my-zsh"
 
-# ZSH_THEME="powerlevel10k/powerlevel10k"
-ZSH_THEME="bira"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+# ZSH_THEME="bira"
 CASE_SENSITIVE="true"
 ENABLE_CORRECTION="true"
 
@@ -10,6 +10,11 @@ plugins=(git)
 source $ZSH/oh-my-zsh.sh
 
 export EDITOR='nvim'
+
+# Source environment-specific variables
+if [[ -f ~/.config/zsh/.zshrc.local ]]; then
+  source ~/.config/zsh/.zshrc.local
+fi
 
 # -------
 # Aliases
@@ -29,7 +34,6 @@ alias dstart='docker compose up -d && docker compose logs -f -n 1000'
 alias c='claude --allow-dangerously-skip-permissions'
 alias cc='claude'
 alias oc='opencode'
-
 
 # ----------------------
 # Git Aliases
@@ -56,15 +60,17 @@ fi
 
 # Source the Tmux-related Zsh configurations
 source ~/.config/zsh/tmux.zsh
+source ~/.config/zsh/powerctl.zsh
 
-# ----------
-# AZ completion
-# ----------
+# # ----------
+# # AZ completion
+# # ----------
+#
+# autoload bashcompinit && bashcompinit
+# source $(brew --prefix)/etc/bash_completion.d/az
 
-autoload bashcompinit && bashcompinit
-source $(brew --prefix)/etc/bash_completion.d/az
 export GPG_TTY=$(tty)
 
 # opencode
-export PATH=/Users/kristofferrisa/.opencode/bin:$PATH
+export PATH=~/.opencode/bin:$PATH
 export PATH="$HOME/dotfiles/bin:$PATH"
