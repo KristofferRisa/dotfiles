@@ -13,14 +13,11 @@ This is a personal dotfiles repository for system configuration management. It u
 ```bash
 # Install dotfiles and dependencies
 ./install.sh
-
-# Install Homebrew packages (macOS)
-./brew-install.sh
 ```
 
 The `install.sh` script:
 
-- Installs base dependencies: git, curl, wget, unzip, neovim
+- Installs base dependencies: stow
 - Clones dotfiles repository if not present
 - Installs LazyVim starter configuration
 - Uses GNU Stow to symlink configurations to `~/.config/`
@@ -105,18 +102,6 @@ Agent configurations specify:
 - Pane resizing: `Ctrl+a` then `h/j/k/l` (repeatable)
 - Mouse support enabled
 - History limit: 10,000 lines
-
-### Custom Scripts
-
-**fabyt** (`bin/fabyt`):
-
-- Extracts knowledge from YouTube videos using Fabric AI
-- Dependencies: `fabric`, `yt-dlp`
-- Usage: `fabyt <YouTube-URL>`
-- Default params: `-p create_summary -m GPT-5-nano`
-- Override via env var: `FABYT_PARAMS="-p custom_task" fabyt <URL>`
-- Outputs markdown with YAML frontmatter (tags, URL metadata)
-- Auto-generates filename from video title
 
 ## Development Workflow
 
