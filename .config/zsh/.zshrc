@@ -75,3 +75,4 @@ export GPG_TTY=$(tty)
 # opencode
 export PATH=~/.opencode/bin:$PATH
 export PATH="$HOME/dotfiles/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
