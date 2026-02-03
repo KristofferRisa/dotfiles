@@ -61,6 +61,7 @@ fi
 # Source the Tmux-related Zsh configurations
 source ~/.config/zsh/tmux.zsh
 source ~/.config/zsh/powerctl.zsh
+source ~/.config/zsh/sky.zsh
 
 # # ----------
 # # AZ completion
