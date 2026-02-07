@@ -17,24 +17,23 @@ check_stow() {
 link_dotfiles() {
   cd "$DOTFILES_DIR" || return 1
 
-  [[ -d .config ]] || {
-    echo "Error: .config directory not found"
-    return 1
-  }
+  if [[ -d .config ]]; then
+    mkdir -p ~/.config
 
-  echo "Checking for .config conflicts..."
-  stow -n -t ~/.config .config/ 2>&1 || {
-    echo "Error: Conflicts detected. Backup existing files in ~/.config/"
-    return 1
-  }
+    echo "Checking for .config conflicts..."
+    stow -n -t ~/.config .config/ 2>&1 || {
+      echo "Error: Conflicts detected. Backup existing files in ~/.config/"
+      return 1
+    }
 
-  echo "Linking .config dotfiles..."
-  stow -R -t ~/.config .config/ || {
-    echo "Error: Failed to link .config dotfiles"
-    return 1
-  }
+    echo "Linking .config dotfiles..."
+    stow -R -t ~/.config .config/ || {
+      echo "Error: Failed to link .config dotfiles"
+      return 1
+    }
 
-  echo "Done. Dotfiles linked to ~/.config/"
+    echo "Done. Dotfiles linked to ~/.config/"
+  fi
 
   if [[ -d .claude ]]; then
     mkdir -p ~/.claude
@@ -65,7 +64,7 @@ setup_zshenv() {
   fi
 
   echo "Setting ZDOTDIR in $zshenv..."
-  echo "$zdotdir_line" >> "$zshenv"
+  echo "$zdotdir_line" >>"$zshenv"
   echo "Done. Zsh will now read .zshrc from ~/.config/zsh/"
 }
 
