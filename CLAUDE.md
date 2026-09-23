@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a personal dotfiles repository for system configuration management. It uses GNU Stow for symlink management and contains configurations for shell, terminal emulator, window manager, and development tools. The repository also includes a custom Claude Code workspace setup and OpenCode agent configurations.
+This is a personal dotfiles repository for system configuration management. It uses GNU Stow for symlink management and contains configurations for shell, terminal emulator, and development tools. The repository also includes a custom Claude Code workspace setup and OpenCode agent configurations.
 
 ## Installation & Setup Commands
 
@@ -17,10 +17,16 @@ This is a personal dotfiles repository for system configuration management. It u
 
 The `install.sh` script:
 
-- Installs base dependencies: stow
-- Clones dotfiles repository if not present
-- Installs LazyVim starter configuration
-- Uses GNU Stow to symlink configurations to `~/.config/`
+- Checks that GNU Stow is installed (it installs nothing)
+- Dry-runs Stow and stops on conflicts
+- Links `.config/*` into `~/.config/` and `.claude/*` into `~/.claude/`
+- Adds `export ZDOTDIR="$HOME/.config/zsh"` to `~/.zshenv`
+
+On a new machine, the bootstrap at `https://install.kristoffer.dev/dotfiles`
+(source: kristoffer.dev repo, `static/dotfiles/install.sh`) installs git +
+stow, clones this repo to `~/dotfiles`, moves conflicts to
+`~/.dotfiles-backup/<timestamp>/` and then runs `install.sh`. `brew.sh`
+installs stow + lazygit via Homebrew.
 
 ### Managing Configurations with Stow
 
@@ -48,7 +54,8 @@ stow -R -t ~/.config .config/<app>/
 ├── tmux/              # Tmux configuration and scripts
 ├── zsh/               # Zsh shell configuration
 ├── ghostty/           # Ghostty terminal emulator config
-└── yabai/             # Yabai window manager config
+├── lazygit/           # lazygit config
+└── nvim/              # LazyVim config
 
 .claude/
 ├── agents/            # Claude Code agents (git-commit-summarizer, markdown-optimizer)
@@ -99,7 +106,7 @@ Agent configurations specify:
 - Vim keybindings in copy mode
 - Custom split shortcuts: `|` (vertical), `-` (horizontal)
 - Pane navigation: `h/j/k/l`
-- Pane resizing: `Ctrl+a` then `h/j/k/l` (repeatable)
+- Pane resizing: `H/J/K/L` (repeatable) — lowercase is taken by navigation
 - Mouse support enabled
 - History limit: 10,000 lines
 
@@ -162,4 +169,9 @@ Configurations are NOT copied but symlinked:
 - Tmux config sources from `~/.config/tmux/tmux.conf` (not default location)
 - Zsh config sources tmux.zsh for tmux-specific shell integration
 - Custom scripts in `bin/` should include dependency checks and help text
-- When adding new tools, update `brew-install.sh` for macOS dependencies
+- When adding new tools, update `brew.sh` for Homebrew dependencies
+- `~/.config/zsh` is a link into this repo, so zsh writes its history and
+  `.zcompdump` files here. They are gitignored — keep it that way; history can
+  contain secrets
+- `.p10k.zsh` lives in `.config/zsh/` (ZDOTDIR) and is tracked, so a new
+  machine gets the prompt without running the wizard
