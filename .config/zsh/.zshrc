@@ -1,3 +1,20 @@
+# Enable Powerlevel10k instant prompt. Must stay at the top of .zshrc: below
+# oh-my-zsh it does nothing. Anything that needs console input (password
+# prompts, [y/n] confirmations) must go above this block.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Homebrew, wherever this machine keeps it: Apple Silicon, Intel Mac, Linux.
+# A hardcoded path breaks every machine but the one it was written on.
+for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
+  if [[ -x "$brew_bin" ]]; then
+    eval "$("$brew_bin" shellenv)"
+    break
+  fi
+done
+unset brew_bin
+
 export ZSH="$HOME/.oh-my-zsh"
 
 ZSH_THEME="powerlevel10k/powerlevel10k"
@@ -21,13 +38,16 @@ fi
 # -------
 alias l="ls" # List files in current directory
 alias ll="ls -al" # List all files in current directory in long list format
-alias o="open ." # Open the current directory in Finder
-alias dtable='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"'
-alias dstart='docker compose up -d && docker compose logs -f -n 1000'
 alias n='nvim .'
-alias o="open ." # Open the current directory in Finder
 alias dtable='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"'
 alias dstart='docker compose up -d && docker compose logs -f -n 1000'
+
+# Open the current directory in the file manager (Finder on macOS)
+if [[ "$OSTYPE" == darwin* ]]; then
+  alias o="open ."
+else
+  alias o="xdg-open ."
+fi
 #----------------------
 # Claude Aliases
 # ----------------------
@@ -43,15 +63,10 @@ alias gcm='git commit -m'
 alias gpsh='git push'
 alias gss='git status -s'
 
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# To customize prompt, run `p10k configure` or edit ~/.config/zsh/.p10k.zsh.
+# ZDOTDIR points zsh here, so that is where the wizard writes it — and where
+# it is tracked, so a new machine gets the same prompt without the wizard.
+[[ ! -f "${ZDOTDIR:-$HOME}/.p10k.zsh" ]] || source "${ZDOTDIR:-$HOME}/.p10k.zsh"
 
 ## fabric config
 # export OPENAI_BASE_URL=https://YOUR-SERVER:8000/v1/
