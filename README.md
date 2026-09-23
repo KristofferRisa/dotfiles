@@ -1,245 +1,123 @@
 # Dotfiles
 
-Personal dotfiles for system configuration management using GNU Stow.
+Personal config for zsh, tmux, neovim, ghostty, and a few other tools. [GNU Stow](https://www.gnu.org/software/stow/) symlinks this repo into your home directory, so editing a file here edits the live config.
 
-## Philosophy
-
-Simple, focused dotfiles repository following UNIX principles:
-
-- **One responsibility**: Link configuration files
-- **No package installation**: Install tools yourself
-- **GNU Stow**: Clean symlink management
-- **Version controlled**: Track all config changes
-
----
-
-## Prerequisites
-
-Install these tools before running the install script:
-
-### Required
-
-- **GNU Stow** - For linking dotfiles
-  - macOS: `brew install stow`
-  - Ubuntu: `sudo apt install stow`
-  - Arch: `sudo pacman -S stow`
-
-### Recommended Tools
-
-The configurations in this repo are designed for:
-
-- **git** - Version control
-- **zsh** with Oh-My-Zsh - Enhanced shell
-- **tmux** - Terminal multiplexer
-- **neovim** - Modern text editor
-- **ghostty** - Terminal emulator
-
-Install these separately using your system's package manager.
-
----
-
-## Installation
-
-### Quick Start
+## Install
 
 ```bash
-# Clone the repository
-git clone https://github.com/kristofferrisa/dotfiles.git ~/dotfiles
+curl -fsSL https://install.kristoffer.dev/dotfiles | bash
+```
 
-# Link dotfiles
-cd ~/dotfiles
+The same script is on GitHub:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/install.sh | bash
+```
+
+Both commands clone this repo to `~/dotfiles` and run `install.sh`. The script:
+
+1. Installs what the setup needs. On macOS that is Homebrew (if it is missing), GNU Stow, and lazygit. On Linux it installs `git`, `stow`, and `zsh` with apt, pacman, or dnf.
+2. Installs Oh My Zsh and Powerlevel10k when they are not already there.
+3. Symlinks `.config` to `~/.config` and `.claude` to `~/.claude`.
+4. Writes `~/.zshenv` so zsh reads `~/.config/zsh`, and puts Homebrew on `PATH`. Setting `ZDOTDIR` makes zsh skip `~/.zprofile`, which is where Homebrew normally adds itself.
+
+From a checkout you already have:
+
+```bash
 ./install.sh
 ```
 
-### What It Does
+Clone somewhere else with `DOTFILES_DEST=/path/to/dotfiles`.
 
-The install script:
+Open a new terminal when it finishes.
 
-1. Checks if GNU Stow is installed
-2. Checks for conflicts with existing files
-3. Creates symlinks from `.config/*` to `~/.config/`
-
-**That's it.** No package installation, no setup wizards, just linking configs.
-
-### Output
-
-```
-Checking for conflicts...
-Linking dotfiles...
-Done. Dotfiles linked to ~/.config/
-```
-
-If conflicts are detected, backup your existing `~/.config/` files first.
-
----
-
-## What's Included
-
-### Configurations
-
-```
-.config/
-├── ghostty/       # Ghostty terminal emulator config
-├── nvim/          # Neovim configuration
-├── opencode/      # OpenCode agent configurations
-├── tmux/          # Tmux configuration and keybindings
-└── zsh/           # Zsh shell with Oh-My-Zsh
-```
-
----
-
-## Usage
-
-### Zsh Aliases
-
-Key aliases from `.config/zsh/.zshrc`:
-
-```bash
-n         # Open neovim in current directory
-gaa       # git add --all
-gcm       # git commit -m
-gpsh      # git push
-gss       # git status -s
-```
-
-### Tmux Keybindings
-
-- **Prefix**: `Ctrl+a` (instead of default Ctrl+b)
-- **Split vertical**: `Ctrl+a |`
-- **Split horizontal**: `Ctrl+a -`
-- **Navigate panes**: `Ctrl+a h/j/k/l`
-- **Resize panes**: `Ctrl+a H/J/K/L` (hold Ctrl)
-- **Copy mode**: `Ctrl+a [` (vim keybindings)
-
-### Neovim
-
-This repo includes nvim configuration. To use it:
-
-1. Install neovim: `brew install neovim` (macOS) or your package manager
-2. Link configs: `./install.sh`
-3. Launch nvim: plugins will install on first launch
-
----
-
-## Repository Structure
-
-```
-dotfiles/
-├── install.sh              # Link dotfiles using Stow (37 lines)
-├── .config/                # Application configurations
-│   ├── ghostty/            # Terminal emulator
-│   ├── nvim/               # Neovim editor
-│   ├── opencode/           # OpenCode agents
-│   ├── tmux/               # Terminal multiplexer
-│   ├── yabai/              # Window manager (macOS)
-│   └── zsh/                # Shell configuration
-├── README.md               # This file
-```
-
----
-
-## Updating Dotfiles
+## Update
 
 ```bash
 cd ~/dotfiles
 git pull
-./install.sh  # Re-link configs
+./install.sh
 ```
 
-GNU Stow will update symlinks automatically.
+## What's included
 
----
+```
+.config/
+├── ghostty/     # Ghostty terminal
+├── lazygit/     # lazygit
+├── nvim/        # Neovim (LazyVim)
+├── opencode/    # OpenCode agents
+├── tmux/        # tmux, prefix Ctrl+a
+└── zsh/         # zsh, Oh My Zsh, Powerlevel10k
+.claude/         # Claude Code settings
+```
 
-## Modifying Configurations
-
-Since configs are symlinked, you can edit them in place:
+Neovim, tmux, and Ghostty are not installed for you. On macOS:
 
 ```bash
-# Edit config in either location
+brew install neovim tmux
+brew install --cask ghostty
+```
+
+The first `nvim` launch installs plugins.
+
+## Daily commands
+
+Zsh aliases:
+
+| Alias | Action |
+| --- | --- |
+| `n` | `nvim .` |
+| `gaa` | `git add .` |
+| `gcm` | `git commit -m` |
+| `gpsh` | `git push` |
+| `gss` | `git status -s` |
+
+Tmux, prefix `Ctrl+a`:
+
+| Keys | Action |
+| --- | --- |
+| `\|` | Vertical split |
+| `-` | Horizontal split |
+| `h` `j` `k` `l` | Move between panes |
+| `H` `J` `K` `L` | Resize panes |
+| `[` | Copy mode (vim keys) |
+
+## Conflicts
+
+Stow will not overwrite a file that is already at the destination. If `~/.config/zsh` (or another package directory) is a real folder, the script stops and prints the path. Move that path aside and run `./install.sh` again:
+
+```bash
+mv ~/.config/zsh ~/.config/zsh.backup
+./install.sh
+```
+
+Leave the rest of `~/.config` where it is. Only the names inside `.config/` in this repo are linked.
+
+## Unlink
+
+```bash
+cd ~/dotfiles
+stow -D -t ~/.config .config
+stow -D -t ~/.claude .claude
+```
+
+## Edit
+
+The files in `~/.config` are symlinks. This edits the repo copy:
+
+```bash
 nvim ~/.config/zsh/.zshrc
-# OR
-nvim ~/dotfiles/.config/zsh/.zshrc
-# Both point to the same file!
-
-# Commit changes
-cd ~/dotfiles
-git add .config/zsh/.zshrc
-git commit -m "Update zsh config"
-git push
 ```
 
----
+Commit from `~/dotfiles`.
 
-## Troubleshooting
+## Installer URL
 
-### "GNU Stow not installed"
+`https://install.kristoffer.dev/dotfiles` should return this repo's `install.sh`. `curl -fsSL` follows redirects, so a redirect to the raw GitHub file is enough:
 
-```bash
-# macOS
-brew install stow
-
-# Ubuntu/Debian
-sudo apt install stow
-
-# Arch
-sudo pacman -S stow
-```
-
-### "Conflicts detected"
-
-Backup existing configs:
-
-```bash
-mv ~/.config ~/.config.backup
-./install.sh
-```
-
-Or manually resolve conflicts:
-
-```bash
-# Remove specific conflicting file
-rm ~/.config/zsh/.zshrc
-./install.sh
-```
-
-### Unlinking Configs
-
-```bash
-cd ~/dotfiles
-stow -D -t ~/.config .config/
-```
-
----
-
-## Design Principles
-
-1. **Do one thing well**: Link dotfiles, nothing more
-2. **Minimal complexity**: 37 lines of shell script
-3. **No hidden magic**: Clear, readable code
-4. **Fail fast**: Exit on errors with helpful messages
-5. **Composable**: Works with your existing tools
-
----
-
-## Contributing
-
-This is a personal dotfiles repository, but feel free to:
-
-- Fork for your own use
-- Open issues for bugs
-- Suggest improvements via PRs
-
----
+`https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/install.sh`
 
 ## License
 
-MIT License - Use as you wish.
-
----
-
-## Resources
-
-- [GNU Stow Manual](https://www.gnu.org/software/stow/manual/stow.html)
-- [Oh-My-Zsh](https://ohmyz.sh/)
-- [Neovim](https://neovim.io/)
-- [Tmux](https://github.com/tmux/tmux/wiki)
+[MIT](LICENSE)

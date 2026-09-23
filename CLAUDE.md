@@ -15,26 +15,22 @@ This is a personal dotfiles repository for system configuration management. It u
 ./install.sh
 ```
 
-The `install.sh` script:
+`install.sh` is the only setup entry point. Piped (`curl | bash`), it clones this repo to `~/dotfiles` and re-runs the on-disk script. From a checkout, it:
 
-- Installs base dependencies: stow
-- Clones dotfiles repository if not present
-- Installs LazyVim starter configuration
-- Uses GNU Stow to symlink configurations to `~/.config/`
+- Installs GNU Stow. macOS uses Homebrew and installs Homebrew first if needed, plus `lazygit`. Linux uses apt, pacman, or dnf for `git`, `stow`, and `zsh`.
+- Installs Oh My Zsh (to `~/.oh-my-zsh`) and Powerlevel10k when they are missing. The Oh My Zsh installer must be called with `ZDOTDIR` empty and `--keep-zshrc`, or it overwrites the symlinked `.zshrc`.
+- Symlinks the `.config` package to `~/.config` and `.claude` to `~/.claude`.
+- Writes `ZDOTDIR` and a Homebrew `shellenv` snippet to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`.
 
 ### Managing Configurations with Stow
 
-Configurations are organized by application in `.config/` and linked using GNU Stow:
+`.config` is one Stow package. Its children (`zsh`, `tmux`, `nvim`, …) are what land in `~/.config`:
 
 ```bash
-# Link specific config directory
-stow -t ~/.config .config/<app>/
-
-# Remove symlinks
-stow -D -t ~/.config .config/<app>/
-
-# Restow (useful after updates)
-stow -R -t ~/.config .config/<app>/
+# Link, unlink, restow. Run from the repo root.
+stow -t ~/.config .config
+stow -D -t ~/.config .config
+stow -R -t ~/.config .config
 ```
 
 ## Architecture & Structure
@@ -162,4 +158,4 @@ Configurations are NOT copied but symlinked:
 - Tmux config sources from `~/.config/tmux/tmux.conf` (not default location)
 - Zsh config sources tmux.zsh for tmux-specific shell integration
 - Custom scripts in `bin/` should include dependency checks and help text
-- When adding new tools, update `brew-install.sh` for macOS dependencies
+- When adding a Homebrew dependency of the setup itself, add it to `BREW_PACKAGES` in `install.sh`
