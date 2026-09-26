@@ -27,4 +27,4 @@ body:
     id: notes
     attributes:
       label: Notes for whoever implements it
-      description: Mention @claude in a comment to have Claude pick this up.
+      description: Files, prior art, or anything that would help.
