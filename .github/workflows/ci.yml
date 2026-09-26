@@ -24,7 +24,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh tmux
 
       - name: ShellCheck
-        run: shellcheck install.sh
+        run: shellcheck install.sh .claude/statusline/statusline.sh tests/statusline/run.sh
 
       - name: shfmt
         run: |
@@ -117,6 +117,7 @@ jobs:
           [[ -L "$H/.claude/settings.json" ]]
           [[ -L "$H/.config/tmux" ]]
           [[ -L "$H/.config/git" ]]
+          [[ -L "$H/.claude/statusline" ]]
           [[ ! -e "$H/.config/zsh/.zcompdump-ci" && ! -e "$H/.config/zsh/.zsh_history" ]]
           [[ "$(cat "$H/.config/keep.txt")" == unrelated ]]
           grep -q theme "$H"/.dotfiles-backup/*/.claude/settings.json
@@ -147,6 +148,17 @@ jobs:
             cat zsh-stderr.txt
             exit 1
           fi
+
+      # Cost math against hand-worked amounts; runs on both OSes because
+      # the script falls back between BSD and GNU date/find.
+      - name: Status line tests
+        run: tests/statusline/run.sh
+
+      - name: Status line renders from the installed link
+        run: |
+          echo '{"session_id":"ci","cwd":"'"$GITHUB_WORKSPACE"'","model":{"display_name":"Opus 5.5"}}' \
+            | HOME="$TEST_HOME" NO_COLOR=1 bash "$TEST_HOME/.claude/statusline/statusline.sh" | tee statusline.txt
+          grep -q 'Opus 5.5' statusline.txt
 
       - name: Piped bootstrap (dry run)
         run: |

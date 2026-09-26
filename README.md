@@ -62,7 +62,8 @@ Or re-run the one-liner, which does both.
 ├── tmux/        # Ctrl+a prefix, vim-style panes
 └── zsh/         # Oh My Zsh + Powerlevel10k, aliases, completions
 .claude/
-└── settings.json  # Claude Code settings
+├── settings.json  # Claude Code settings
+└── statusline/    # Claude Code status line (bash + jq)
 ```
 
 The first `nvim` launch installs every plugin. Give it a minute.
@@ -98,6 +99,24 @@ Tmux, prefix `Ctrl+a`:
 | `H` `J` `K` `L` | Resize panes (repeatable) |
 | `[` | Copy mode (vi keys) |
 | `r` | Reload config |
+
+## Claude Code status line
+
+`.claude/statusline/` is a status line written in bash and `jq`. It needs no Node or npm package, and it takes about 40 ms per refresh.
+
+```
+ dotfiles   main ●1   Opus 5.5 · xhigh   ▰▰▱▱▱▱▱▱ 26% 256k/1M
+ session $6.84 · 112k out · +412/-87 · 1h30m │ today $7.52 · cache 98% (saved $63.15) │ 5h 42% ↻1h19m │ 7d 73% ↻3d11h
+```
+
+- **session**: Claude Code's own cost figure, fresh output tokens, lines changed, and time
+- **today**: every transcript since local midnight (subagents included), priced from `pricing.json`. A `~` means a model had no known price
+- **cache**: share of input served from cache, and what that saved against full input price
+- **5h / 7d**: subscription rate limits and when they reset, when Claude Code reports them
+
+`bash ~/.claude/statusline/statusline.sh --report` prints today's cost by model.
+
+It replaces `@owloops/claude-powerline`, which priced models it didn't know by falling back to a family match. `claude-opus-5-5` matched plain `opus` and was billed at Opus 4's $15/$75 per million tokens, so a real $7.13 day showed as $38.63. Here, each model id uses the longest matching key in `pricing.json`, and an unknown model is flagged rather than guessed. When a new model launches, add its row.
 
 ## Signed commits
 
