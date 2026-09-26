@@ -296,6 +296,32 @@ setup_zshenv() {
   fi
 }
 
+# .config/git/config signs every commit with this key, so without it every
+# commit fails. Generating or uploading a key is the user's call; say how.
+check_signing_key() {
+  local key="$HOME/.ssh/id_ed25519.pub"
+
+  if [[ -f "$key" ]]; then
+    log "Commit signing key found: $key"
+    return 0
+  fi
+
+  cat <<EOF
+
+Note: git signs commits with $key, which does not exist yet.
+Commits will fail until you create it and add it to GitHub:
+
+  ssh-keygen -t ed25519 -C "\$(git config user.email)"
+  gh auth refresh -h github.com -s admin:ssh_signing_key
+  gh ssh-key add ~/.ssh/id_ed25519.pub --type signing --title "\$(hostname -s)"
+  gh ssh-key add ~/.ssh/id_ed25519.pub --type authentication --title "\$(hostname -s)"
+
+Then add the key to ~/.config/git/allowed_signers, or use another key via
+~/.config/git/config.local. See README.md, "Signed commits".
+
+EOF
+}
+
 bootstrap() {
   local dest="$DEST"
 
@@ -348,6 +374,7 @@ main() {
     stow_package .claude "$HOME/.claude"
   fi
   setup_zshenv
+  check_signing_key
 
   if ((DRY_RUN)); then
     log "Dry run done. Run again without --dry-run to apply."

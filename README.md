@@ -55,6 +55,7 @@ Or re-run the one-liner, which does both.
 ```
 .config/
 ├── ghostty/     # Terminal: Catppuccin Mocha, OSC 52 clipboard
+├── git/         # Global git config, SSH commit signing
 ├── lazygit/     # lazygit: Nerd Font v3 icons
 ├── nvim/        # LazyVim with .NET, Go, Vue, Tailwind, DAP and Claude Code extras
 ├── opencode/    # OpenCode agents
@@ -97,6 +98,24 @@ Tmux, prefix `Ctrl+a`:
 | `H` `J` `K` `L` | Resize panes (repeatable) |
 | `[` | Copy mode (vi keys) |
 | `r` | Reload config |
+
+## Signed commits
+
+`.config/git/config` signs every commit and tag with `~/.ssh/id_ed25519.pub` (SSH signing). The installer warns if that key is missing, because commits fail without it.
+
+On a new machine:
+
+```bash
+ssh-keygen -t ed25519 -C "$(git config user.email)"      # skip if the key exists
+gh auth refresh -h github.com -s admin:ssh_signing_key
+gh ssh-key add ~/.ssh/id_ed25519.pub --type signing --title "$(hostname -s)"
+```
+
+GitHub shows commits as **Verified** once the key is added as a *signing* key. An authentication key alone is not enough, even if it is the same key.
+
+Add the key to `.config/git/allowed_signers` too, so `git log --show-signature` can verify it locally. To use a different key or email on one machine, put the override in `~/.config/git/config.local`; it is gitignored.
+
+If `~/.gitconfig` exists, git reads it after `~/.config/git/config`, and its settings win. Delete it once the tracked config covers everything you need.
 
 ## Edit
 

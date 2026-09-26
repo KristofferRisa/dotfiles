@@ -35,6 +35,7 @@ stow -R -t ~/.config .config
 ```
 .config/
 ├── ghostty/           # Ghostty terminal config
+├── git/               # Global git config + allowed_signers (SSH commit signing)
 ├── lazygit/           # lazygit config
 ├── nvim/              # LazyVim config
 ├── opencode/agent/    # OpenCode agent prompts
@@ -79,8 +80,15 @@ permission:
 - Prefix `Ctrl+a`; splits `|` and `-`; navigate `h/j/k/l`; resize `H/J/K/L` (repeatable)
 - Vi copy mode, mouse on, 10,000 lines of history, OSC 52 clipboard
 
+### Git (`.config/git/`)
+
+- git reads `~/.config/git/config` natively. It signs every commit and tag with SSH (`~/.ssh/id_ed25519.pub`)
+- `allowed_signers` lists the public keys trusted for local verification. Add each machine's key
+- Machine-specific overrides go in `config.local` (gitignored, included last)
+
 ## Notes for Future Modifications
 
+- `.config/.stow-local-ignore` keeps zsh state (history, `.zcompdump`) and machine-local files from being linked. It replaces Stow's defaults, so keep those listed
 - `~/.config/zsh` is a link into this repo, so zsh writes its history and `.zcompdump` here. They are gitignored. Keep it that way; history can contain secrets
 - Tmux config lives at `~/.config/tmux/tmux.conf`, not the default location
 - When the setup itself needs a new Homebrew package, add it to `BREW_PACKAGES` in `install.sh` (and `LINUX_PACKAGES` if it applies)
