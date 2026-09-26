@@ -1,0 +1,39 @@
+# Global git config. git reads ~/.config/git/config natively; ~/.gitconfig,
+# if present, is read after this file and wins on conflicts.
+
+[user]
+	name = Kristoffer Risa
+	email = kristofferrisa@gmail.com
+	# SSH signing key. Git expands ~. Point a machine at another key in
+	# config.local (below).
+	signingKey = ~/.ssh/id_ed25519.pub
+
+# Sign every commit and tag with SSH. GitHub shows them as Verified once the
+# key is added there as a *signing* key (an auth key alone is not enough).
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	# Public keys trusted for `git log --show-signature` and `git verify-commit`.
+	allowedSignersFile = ~/.config/git/allowed_signers
+[commit]
+	gpgSign = true
+[tag]
+	gpgSign = true
+
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+[push]
+	autoSetupRemote = true
+[core]
+	editor = nvim
+[fetch]
+	prune = true
+[rerere]
+	enabled = true
+
+# Machine-specific overrides (work email, different signing key). Gitignored;
+# a missing file is skipped.
+[include]
+	path = ~/.config/git/config.local

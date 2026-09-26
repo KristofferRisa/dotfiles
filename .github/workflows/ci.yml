@@ -1,0 +1,167 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install zsh and tmux
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh tmux
+
+      - name: ShellCheck
+        run: shellcheck install.sh .claude/statusline/statusline.sh tests/statusline/run.sh
+
+      - name: shfmt
+        run: |
+          curl -fsSL -o shfmt https://github.com/mvdan/sh/releases/download/v3.10.0/shfmt_v3.10.0_linux_amd64
+          chmod +x shfmt
+          ./shfmt -d -i 2 -ci install.sh
+
+      # ShellCheck has no zsh mode, so zsh files get a parse check.
+      - name: zsh syntax
+        run: |
+          for f in .config/zsh/.zshrc .config/zsh/.p10k.zsh .config/zsh/*.zsh .config/tmux/tmx; do
+            echo "zsh -n $f"
+            zsh -n "$f"
+          done
+
+      - name: tmux config loads
+        run: |
+          tmux -f .config/tmux/tmux.conf -L ci new-session -d 'sleep 5'
+          tmux -L ci kill-server
+
+      - name: JSON is valid
+        run: jq empty .claude/settings.json .config/nvim/lazy-lock.json .config/nvim/lazyvim.json
+
+      - name: StyLua
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check .config/nvim
+
+      - name: actionlint
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # ~/.config/zsh is a link into this repo, so a stray history file or
+      # .zshrc.local could carry tokens into a commit.
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  install:
+    name: Install (${{ matrix.os }})
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Seed a new-machine home
+        run: |
+          # A throwaway home, so the runner's own dotfiles never mask a problem.
+          TEST_HOME="$RUNNER_TEMP/home"
+          echo "TEST_HOME=$TEST_HOME" >> "$GITHUB_ENV"
+          mkdir -p "$TEST_HOME/.claude" "$TEST_HOME/.config/zsh"
+          # What Claude Code writes on first launch, and a stale .zshrc.
+          echo '{"theme":"dark"}' > "$TEST_HOME/.claude/settings.json"
+          echo '# old' > "$TEST_HOME/.config/zsh/.zshrc"
+          echo 'unrelated' > "$TEST_HOME/.config/keep.txt"
+          # zsh state another machine left in the repo must never be linked.
+          touch .config/zsh/.zcompdump-ci .config/zsh/.zsh_history
+
+      - name: Dry run changes nothing
+        run: |
+          # Homebrew caches under ~/Library on macOS even for `brew list`;
+          # that is brew, not the installer.
+          snapshot() { find "$TEST_HOME" -print | grep -v "^$TEST_HOME/Library" | sort; }
+          before="$(snapshot)"
+          HOME="$TEST_HOME" ./install.sh --dry-run
+          diff <(echo "$before") <(snapshot)
+
+      - name: Install
+        run: HOME="$TEST_HOME" ./install.sh
+
+      - name: Links, backups, and zshenv are in place
+        run: |
+          set -x
+          H="$TEST_HOME"
+          [[ -L "$H/.config/zsh/.zshrc" ]]
+          [[ -L "$H/.claude/settings.json" ]]
+          [[ -L "$H/.config/tmux" ]]
+          [[ -L "$H/.config/git" ]]
+          [[ -L "$H/.claude/statusline" ]]
+          [[ ! -e "$H/.config/zsh/.zcompdump-ci" && ! -e "$H/.config/zsh/.zsh_history" ]]
+          [[ "$(cat "$H/.config/keep.txt")" == unrelated ]]
+          grep -q theme "$H"/.dotfiles-backup/*/.claude/settings.json
+          grep -q old "$H"/.dotfiles-backup/*/.config/zsh/.zshrc
+          grep -q 'ZDOTDIR=.*/.config/zsh' "$H/.zshenv"
+          [[ -d "$H/.oh-my-zsh/custom/themes/powerlevel10k" ]]
+          [[ ! -e "$H/.zshrc" ]]
+
+      - name: Second run is a no-op
+        run: |
+          out="$(HOME="$TEST_HOME" ./install.sh)"
+          echo "$out"
+          ! grep -qE 'Installing|moved|Added' <<<"$out"
+
+      # The Ubuntu runner image ships /usr/share/zsh world-writable, which
+      # stock Ubuntu does not. compaudit then refuses to load completions.
+      - name: Restore stock zsh permissions (Linux runner)
+        if: runner.os == 'Linux'
+        run: sudo chmod -R go-w /usr/share/zsh
+
+      - name: zsh starts cleanly
+        run: |
+          HOME="$TEST_HOME" ZDOTDIR="$TEST_HOME/.config/zsh" TERM=xterm-256color \
+            zsh -i -c 'echo started' 2> zsh-stderr.txt | tee zsh-stdout.txt
+          grep -q started zsh-stdout.txt
+          if [[ -s zsh-stderr.txt ]]; then
+            echo "::error::zsh printed to stderr on startup"
+            cat zsh-stderr.txt
+            exit 1
+          fi
+
+      # Cost math against hand-worked amounts; runs on both OSes because
+      # the script falls back between BSD and GNU date/find.
+      - name: Status line tests
+        run: tests/statusline/run.sh
+
+      - name: Status line renders from the installed link
+        run: |
+          echo '{"session_id":"ci","cwd":"'"$GITHUB_WORKSPACE"'","model":{"display_name":"Opus 5.5"}}' \
+            | HOME="$TEST_HOME" NO_COLOR=1 bash "$TEST_HOME/.claude/statusline/statusline.sh" | tee statusline.txt
+          grep -q 'Opus 5.5' statusline.txt
+
+      - name: Piped bootstrap (dry run)
+        run: |
+          # The curl | bash path: script on stdin, repo cloned from this checkout.
+          HOME="$TEST_HOME" DOTFILES_REPO="file://$GITHUB_WORKSPACE" \
+            bash -s -- --dry-run < install.sh
