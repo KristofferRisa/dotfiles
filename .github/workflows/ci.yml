@@ -97,11 +97,12 @@ jobs:
 
       - name: Dry run changes nothing
         run: |
-          before="$(find "$TEST_HOME" -print | sort)"
+          # Homebrew caches under ~/Library on macOS even for `brew list`;
+          # that is brew, not the installer.
+          snapshot() { find "$TEST_HOME" -print | grep -v "^$TEST_HOME/Library" | sort; }
+          before="$(snapshot)"
           HOME="$TEST_HOME" ./install.sh --dry-run
-          after="$(find "$TEST_HOME" -print | grep -v '/Library/' | sort)"
-          before="$(printf '%s\n' "$before" | grep -v '/Library/')"
-          diff <(echo "$before") <(echo "$after")
+          diff <(echo "$before") <(snapshot)
 
       - name: Install
         run: HOME="$TEST_HOME" ./install.sh
@@ -125,6 +126,12 @@ jobs:
           out="$(HOME="$TEST_HOME" ./install.sh)"
           echo "$out"
           ! grep -qE 'Installing|moved|Added' <<<"$out"
+
+      # The Ubuntu runner image ships /usr/share/zsh world-writable, which
+      # stock Ubuntu does not. compaudit then refuses to load completions.
+      - name: Restore stock zsh permissions (Linux runner)
+        if: runner.os == 'Linux'
+        run: sudo chmod -R go-w /usr/share/zsh
 
       - name: zsh starts cleanly
         run: |
