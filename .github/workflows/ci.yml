@@ -94,6 +94,8 @@ jobs:
           echo '{"theme":"dark"}' > "$TEST_HOME/.claude/settings.json"
           echo '# old' > "$TEST_HOME/.config/zsh/.zshrc"
           echo 'unrelated' > "$TEST_HOME/.config/keep.txt"
+          # zsh state another machine left in the repo must never be linked.
+          touch .config/zsh/.zcompdump-ci .config/zsh/.zsh_history
 
       - name: Dry run changes nothing
         run: |
@@ -114,6 +116,8 @@ jobs:
           [[ -L "$H/.config/zsh/.zshrc" ]]
           [[ -L "$H/.claude/settings.json" ]]
           [[ -L "$H/.config/tmux" ]]
+          [[ -L "$H/.config/git" ]]
+          [[ ! -e "$H/.config/zsh/.zcompdump-ci" && ! -e "$H/.config/zsh/.zsh_history" ]]
           [[ "$(cat "$H/.config/keep.txt")" == unrelated ]]
           grep -q theme "$H"/.dotfiles-backup/*/.claude/settings.json
           grep -q old "$H"/.dotfiles-backup/*/.config/zsh/.zshrc
