@@ -1,3 +1,10 @@
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
 export ZSH="$HOME/.oh-my-zsh"
 
 ZSH_THEME="powerlevel10k/powerlevel10k"
@@ -25,13 +32,9 @@ alias o="open ." # Open the current directory in Finder
 alias dtable='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"'
 alias dstart='docker compose up -d && docker compose logs -f -n 1000'
 alias n='nvim .'
-alias o="open ." # Open the current directory in Finder
-alias dtable='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"'
-alias dstart='docker compose up -d && docker compose logs -f -n 1000'
 #----------------------
 # Claude Aliases
 # ----------------------
-alias c='claude --allow-dangerously-skip-permissions'
 alias cc='claude'
 alias oc='opencode'
 
@@ -42,13 +45,6 @@ alias gaa='git add .'
 alias gcm='git commit -m'
 alias gpsh='git push'
 alias gss='git status -s'
-
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
@@ -62,6 +58,7 @@ fi
 source ~/.config/zsh/tmux.zsh
 source ~/.config/zsh/powerctl.zsh
 source ~/.config/zsh/sky.zsh
+source ~/.config/zsh/mouse.zsh
 
 # # ----------
 # # AZ completion
@@ -70,7 +67,8 @@ source ~/.config/zsh/sky.zsh
 # autoload bashcompinit && bashcompinit
 # source $(brew --prefix)/etc/bash_completion.d/az
 
-export GPG_TTY=$(tty)
+# $(tty) prints "not a tty" under instant prompt; $TTY is set by zsh.
+export GPG_TTY=$TTY
 
 # opencode
 export PATH=~/.opencode/bin:$PATH

@@ -47,14 +47,11 @@ stow -R -t ~/.config .config
 └── yabai/             # Yabai window manager config
 
 .claude/
-├── agents/            # Claude Code agents (git-commit-summarizer, markdown-optimizer)
 └── settings.json      # Claude Code settings
 
 ```
 
 ### Agent System Architecture
-
-This repository defines two parallel agent systems:
 
 **OpenCode Agents** (`.config/opencode/agent/`):
 
@@ -62,11 +59,6 @@ This repository defines two parallel agent systems:
 - Include: companion, senior-developer, solution-architect, code-reviewer, test-engineer, technical-writer, devops-engineer, diagram-specialist, requirements-analyst
 - Primary agent is `companion` (read-only, research-focused)
 - Specialized agents have different tool permissions and capabilities
-
-**Claude Code Agents** (`.claude/agents/`):
-
-- git-commit-summarizer: Analyzes changes and creates comprehensive commits
-- markdown-optimizer: Ensures markdown files follow standards with proper frontmatter
 
 Agent configurations specify:
 
@@ -83,6 +75,7 @@ Agent configurations specify:
 - Git plugin enabled
 - Key aliases:
   - `n` - Open neovim in current directory
+  - `cc` - Claude Code, `oc` - OpenCode
   - `gaa` - Git add all
   - `gcm` - Git commit with message
   - `gpsh` - Git push
@@ -95,7 +88,7 @@ Agent configurations specify:
 - Vim keybindings in copy mode
 - Custom split shortcuts: `|` (vertical), `-` (horizontal)
 - Pane navigation: `h/j/k/l`
-- Pane resizing: `Ctrl+a` then `h/j/k/l` (repeatable)
+- Pane resizing: `Ctrl+a` then `H/J/K/L` (repeatable)
 - Mouse support enabled
 - History limit: 10,000 lines
 
@@ -104,8 +97,8 @@ Agent configurations specify:
 ### Adding New Configurations
 
 1. Place config files in `.config/<application>/`
-2. Test by stowing: `stow -t ~/.config .config/<application>/`
-3. Verify symlinks created correctly
+2. Restow the package: `stow -R -t ~/.config .config`
+3. Verify `~/.config/<application>` is a symlink into this repo
 4. Commit changes to repository
 
 ### Modifying Agents
@@ -114,11 +107,6 @@ Agent configurations specify:
 
 - Update YAML frontmatter for model, temperature, tools, permissions
 - Modify agent personality and capabilities in markdown body
-
-**Claude Code agents**: Edit markdown files in `.claude/agents/`
-
-- Follow agent description format with usage examples
-- Include tool specifications and operating principles
 
 ## Key Configuration Patterns
 

@@ -242,9 +242,23 @@ fi
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Claude Code writes its own ~/.claude/settings.json on first launch, which
+# is usually before this script runs on a new machine. Keep it as a backup
+# so the repo's settings can be linked in its place.
+backup_claude_settings() {
+  local settings="$HOME/.claude/settings.json"
+
+  if [[ -f "$settings" && ! -L "$settings" ]]; then
+    local backup="$settings.backup-$(date +%Y%m%d%H%M%S)"
+    mv "$settings" "$backup"
+    log "Moved existing $settings to $backup"
+  fi
+}
+
 ensure_dependencies
 install_shell_framework
 stow_package .config "$HOME/.config"
+backup_claude_settings
 stow_package .claude "$HOME/.claude"
 setup_zshenv
 
