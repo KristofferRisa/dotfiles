@@ -1,89 +1,78 @@
 # Dotfiles
 
-Personal dotfiles for system configuration management using GNU Stow.
+Personal dotfiles, linked into place with GNU Stow.
+
+**Guide and new-machine checklist:** [kristoffer.dev/dotfiles](https://kristoffer.dev/dotfiles/)
 
 ## Philosophy
 
 Simple, focused dotfiles repository following UNIX principles:
 
-- **One responsibility**: Link configuration files
-- **No package installation**: Install tools yourself
-- **GNU Stow**: Clean symlink management
-- **Version controlled**: Track all config changes
-
----
-
-## Prerequisites
-
-Install these tools before running the install script:
-
-### Required
-
-- **GNU Stow** - For linking dotfiles
-  - macOS: `brew install stow`
-  - Ubuntu: `sudo apt install stow`
-  - Arch: `sudo pacman -S stow`
-
-### Recommended Tools
-
-The configurations in this repo are designed for:
-
-- **git** - Version control
-- **zsh** with Oh-My-Zsh - Enhanced shell
-- **tmux** - Terminal multiplexer
-- **neovim** - Modern text editor
-- **ghostty** - Terminal emulator
-
-Install these separately using your system's package manager.
+- **One responsibility**: `install.sh` links configuration files, nothing else
+- **Installing tools is separate**: `brew.sh`, or the bootstrap's `--tools` flag
+- **GNU Stow**: clean symlink management
+- **Version controlled**: every config change is a commit
 
 ---
 
 ## Installation
 
-### Quick Start
+### On a new machine
 
 ```bash
-# Clone the repository
-git clone https://github.com/kristofferrisa/dotfiles.git ~/dotfiles
+curl -fsSL https://install.kristoffer.dev/dotfiles | bash
+```
 
-# Link dotfiles
+The bootstrap installs git and Stow if they are missing, clones this repo to `~/dotfiles` (or fast-forwards it), moves anything that would block Stow into `~/.dotfiles-backup/<timestamp>/`, and then runs `./install.sh`. Nothing is deleted.
+
+```bash
+# look first, change nothing
+curl -fsSL https://install.kristoffer.dev/dotfiles | bash -s -- --dry-run
+
+# also install zsh, tmux, neovim, lazygit, Oh My Zsh and Powerlevel10k
+curl -fsSL https://install.kristoffer.dev/dotfiles | bash -s -- --tools
+```
+
+Read the script first: [kristoffer.dev/dotfiles/install.sh](https://kristoffer.dev/dotfiles/install.sh).
+
+### By hand
+
+```bash
+git clone https://github.com/kristofferrisa/dotfiles.git ~/dotfiles
 cd ~/dotfiles
+./brew.sh      # optional: stow + lazygit via Homebrew
 ./install.sh
 ```
 
-### What It Does
+### What `install.sh` does
 
-The install script:
+1. Checks that GNU Stow is installed
+2. Checks for conflicts, and stops if a real file is in the way
+3. Links `.config/*` into `~/.config/` and `.claude/*` into `~/.claude/`
+4. Adds `export ZDOTDIR="$HOME/.config/zsh"` to `~/.zshenv`, so zsh reads its config from `~/.config/zsh/`
 
-1. Checks if GNU Stow is installed
-2. Checks for conflicts with existing files
-3. Creates symlinks from `.config/*` to `~/.config/`
+Run it again whenever you like; it relinks the same links.
 
-**That's it.** No package installation, no setup wizards, just linking configs.
+### Prerequisites
 
-### Output
-
-```
-Checking for conflicts...
-Linking dotfiles...
-Done. Dotfiles linked to ~/.config/
-```
-
-If conflicts are detected, backup your existing `~/.config/` files first.
+- **GNU Stow** — required (`brew install stow` / `apt install stow` / `pacman -S stow`)
+- **zsh** with [Oh My Zsh](https://ohmyz.sh/) and [Powerlevel10k](https://github.com/romkatv/powerlevel10k) — `.zshrc` sources both
+- **tmux**, **neovim** (0.10+, for LazyVim), **lazygit**, **ghostty** — recommended
 
 ---
 
 ## What's Included
 
-### Configurations
-
 ```
 .config/
-├── ghostty/       # Ghostty terminal emulator config
-├── nvim/          # Neovim configuration
-├── opencode/      # OpenCode agent configurations
-├── tmux/          # Tmux configuration and keybindings
-└── zsh/           # Zsh shell with Oh-My-Zsh
+├── ghostty/       # Terminal: Catppuccin Mocha, OSC 52 clipboard
+├── lazygit/       # lazygit: Nerd Font v3 icons
+├── nvim/          # LazyVim with .NET, Go, Vue, Tailwind, DAP and Claude Code extras
+├── opencode/      # OpenCode agents
+├── tmux/          # Ctrl+a prefix, vim-style panes
+└── zsh/           # Oh My Zsh + Powerlevel10k, aliases, completions
+.claude/
+└── settings.json  # Claude Code settings
 ```
 
 ---
@@ -95,29 +84,35 @@ If conflicts are detected, backup your existing `~/.config/` files first.
 Key aliases from `.config/zsh/.zshrc`:
 
 ```bash
-n         # Open neovim in current directory
-gaa       # git add --all
+n         # nvim .
+ll        # ls -al
+o         # open the current directory (Finder / xdg-open)
+gaa       # git add .
 gcm       # git commit -m
 gpsh      # git push
 gss       # git status -s
+c / cc    # claude (c skips permission prompts — sandboxes only)
+oc        # opencode
+dtable    # docker ps as a readable table
+dstart    # docker compose up -d, then tail the logs
+tmx NAME  # attach to a tmux session, or offer to create it
 ```
+
+Machine-specific settings (proxies, tokens, extra `PATH` entries) go in `~/.config/zsh/.zshrc.local`. It is sourced if present and ignored by git.
 
 ### Tmux Keybindings
 
-- **Prefix**: `Ctrl+a` (instead of default Ctrl+b)
-- **Split vertical**: `Ctrl+a |`
-- **Split horizontal**: `Ctrl+a -`
+- **Prefix**: `Ctrl+a` (instead of `Ctrl+b`)
+- **Split left/right**: `Ctrl+a |`
+- **Split top/bottom**: `Ctrl+a -`
 - **Navigate panes**: `Ctrl+a h/j/k/l`
-- **Resize panes**: `Ctrl+a H/J/K/L` (hold Ctrl)
-- **Copy mode**: `Ctrl+a [` (vim keybindings)
+- **Resize panes**: `Ctrl+a H/J/K/L` (Shift, repeatable)
+- **Copy mode**: `Ctrl+a [` (vi keys)
+- **Reload config**: `Ctrl+a r`
 
 ### Neovim
 
-This repo includes nvim configuration. To use it:
-
-1. Install neovim: `brew install neovim` (macOS) or your package manager
-2. Link configs: `./install.sh`
-3. Launch nvim: plugins will install on first launch
+Launch `nvim`. The first launch installs every plugin — give it a minute.
 
 ---
 
@@ -125,15 +120,11 @@ This repo includes nvim configuration. To use it:
 
 ```
 dotfiles/
-├── install.sh              # Link dotfiles using Stow (37 lines)
-├── .config/                # Application configurations
-│   ├── ghostty/            # Terminal emulator
-│   ├── nvim/               # Neovim editor
-│   ├── opencode/           # OpenCode agents
-│   ├── tmux/               # Terminal multiplexer
-│   ├── yabai/              # Window manager (macOS)
-│   └── zsh/                # Shell configuration
-├── README.md               # This file
+├── install.sh      # Link dotfiles with Stow, set ZDOTDIR
+├── brew.sh         # Install stow + lazygit via Homebrew
+├── .config/        # Linked into ~/.config/
+├── .claude/        # Linked into ~/.claude/
+└── README.md
 ```
 
 ---
@@ -146,7 +137,7 @@ git pull
 ./install.sh  # Re-link configs
 ```
 
-GNU Stow will update symlinks automatically.
+Or re-run the one-liner, which does both.
 
 ---
 
@@ -155,18 +146,17 @@ GNU Stow will update symlinks automatically.
 Since configs are symlinked, you can edit them in place:
 
 ```bash
-# Edit config in either location
 nvim ~/.config/zsh/.zshrc
-# OR
+# is the same file as
 nvim ~/dotfiles/.config/zsh/.zshrc
-# Both point to the same file!
 
-# Commit changes
 cd ~/dotfiles
 git add .config/zsh/.zshrc
 git commit -m "Update zsh config"
 git push
 ```
+
+zsh keeps its history and completion cache in `~/.config/zsh/` too, which is inside this repo. `.gitignore` keeps them out of commits.
 
 ---
 
@@ -175,30 +165,17 @@ git push
 ### "GNU Stow not installed"
 
 ```bash
-# macOS
-brew install stow
-
-# Ubuntu/Debian
-sudo apt install stow
-
-# Arch
-sudo pacman -S stow
+brew install stow        # macOS
+sudo apt install stow    # Ubuntu/Debian
+sudo pacman -S stow      # Arch
 ```
 
 ### "Conflicts detected"
 
-Backup existing configs:
+A real file is where a link should go. Either run the bootstrap, which moves conflicts to `~/.dotfiles-backup/`, or move the file yourself:
 
 ```bash
-mv ~/.config ~/.config.backup
-./install.sh
-```
-
-Or manually resolve conflicts:
-
-```bash
-# Remove specific conflicting file
-rm ~/.config/zsh/.zshrc
+mv ~/.config/zsh ~/.config/zsh.backup
 ./install.sh
 ```
 
@@ -207,27 +184,18 @@ rm ~/.config/zsh/.zshrc
 ```bash
 cd ~/dotfiles
 stow -D -t ~/.config .config/
+stow -D -t ~/.claude .claude/
 ```
 
 ---
 
 ## Design Principles
 
-1. **Do one thing well**: Link dotfiles, nothing more
-2. **Minimal complexity**: 37 lines of shell script
-3. **No hidden magic**: Clear, readable code
-4. **Fail fast**: Exit on errors with helpful messages
-5. **Composable**: Works with your existing tools
-
----
-
-## Contributing
-
-This is a personal dotfiles repository, but feel free to:
-
-- Fork for your own use
-- Open issues for bugs
-- Suggest improvements via PRs
+1. **Do one thing well**: `install.sh` links dotfiles, nothing more
+2. **Minimal complexity**: one short shell script
+3. **No hidden magic**: clear, readable code
+4. **Fail fast**: exit on errors with helpful messages
+5. **Composable**: works with your existing tools
 
 ---
 

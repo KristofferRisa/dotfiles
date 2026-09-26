@@ -5,33 +5,13 @@ This is a simple yet powerful TMUX configuration designed to enhance your termin
 
 ## 📦 Installation
 
-1. **Ensure TMUX is installed** on your system:
+This config is part of the dotfiles and is linked with the rest of them:
 
 ```bash
-   # For Debian/Ubuntu
-   sudo apt install tmux
+curl -fsSL https://install.kristoffer.dev/dotfiles | bash
+```
 
-   # For macOS (using Homebrew)
-   brew install tmux
-   ```
-
-2. **Clone the dotfiles repository with submodules:**
-
-```bash
-   git clone --recurse-submodules https://github.com/kristofferrisa/dotfiles.git ~/dotfiles
-   ```
-
-3. **Symlink the TMUX configuration file:**
-
-```bash
-   ln -s ~/dotfiles/tmux ~/.config/
-   ```
-
-4. **Reload the TMUX configuration:**
-
-```bash
-   tmux source-file ~/.config/tmux/.tmux.conf
-   ```
+That links `~/.config/tmux/` to this folder. tmux 3.1+ reads `~/.config/tmux/tmux.conf` on its own.
 
 ## 🎯 Key Features
 
@@ -46,17 +26,17 @@ This is a simple yet powerful TMUX configuration designed to enhance your termin
   - `Ctrl + a` then `j` (down)
   - `Ctrl + a` then `k` (up)
   - `Ctrl + a` then `l` (right)
-- **Pane Resizing:** Adjust pane size using:
-  - `Ctrl + a` then `h`, `j`, `k`, or `l` with arrow keys
-- **Clean Status Bar:** Displays session name, current time, and date.
+- **Pane Resizing:** `Ctrl + a` then `H`, `J`, `K` or `L` (Shift), 5 cells at a time — repeatable
+- **Clean Status Bar:** Displays the user and session name.
+- **OSC 52 Clipboard:** Yanks reach the local clipboard, even over SSH.
 - **256-Color Support:** Ensures a better visual experience with true-color terminals.
 
 ## 🚀 Usage Tips
 
 - **Reload TMUX Configuration:**
-  If you make changes to the configuration file, reload it without restarting TMUX:
+  `Ctrl + a`, `r` — or from a shell:
   ```bash
-  tmux source-file ~/.config/tmux/.tmux.conf
+  tmux source-file ~/.config/tmux/tmux.conf
   ```
 
 - **Detach from Session:**
