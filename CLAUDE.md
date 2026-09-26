@@ -2,25 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing anything.** It has the rules for commits, PRs, testing, and what CI checks. This file describes how the repo is put together.
+
 ## Repository Overview
 
-This is a personal dotfiles repository for system configuration management. It uses GNU Stow for symlink management and contains configurations for shell, terminal emulator, window manager, and development tools. The repository also includes a custom Claude Code workspace setup and OpenCode agent configurations.
+Personal dotfiles. GNU Stow symlinks `.config` into `~/.config` and `.claude` into `~/.claude`, so the files here are the live config on every machine that ran the installer. A broken file here breaks a real shell.
 
-## Installation & Setup Commands
-
-### Initial Installation
-
-```bash
-# Install dotfiles and dependencies
-./install.sh
-```
+## Installation
 
 `install.sh` is the only setup entry point. Piped (`curl | bash`), it clones this repo to `~/dotfiles` and re-runs the on-disk script. From a checkout, it:
 
-- Installs GNU Stow. macOS uses Homebrew and installs Homebrew first if needed, plus `lazygit`. Linux uses apt, pacman, or dnf for `git`, `stow`, and `zsh`.
-- Installs Oh My Zsh (to `~/.oh-my-zsh`) and Powerlevel10k when they are missing. The Oh My Zsh installer must be called with `ZDOTDIR` empty and `--keep-zshrc`, or it overwrites the symlinked `.zshrc`.
-- Symlinks the `.config` package to `~/.config` and `.claude` to `~/.claude`.
-- Writes `ZDOTDIR` and a Homebrew `shellenv` snippet to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`.
+- Installs dependencies. macOS: Homebrew if needed, then `BREW_PACKAGES` (stow, lazygit, tmux, neovim). Linux: `LINUX_PACKAGES` (git, stow, zsh, tmux) via apt, pacman, or dnf.
+- Installs Oh My Zsh (to `~/.oh-my-zsh`) and Powerlevel10k when missing. The Oh My Zsh installer must be called with `ZDOTDIR` empty and `--keep-zshrc`, or it overwrites the symlinked `.zshrc`.
+- Links `.config` and `.claude` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted.
+- Adds `ZDOTDIR` to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`, so `.zshrc` puts Homebrew on `PATH` itself.
+
+Flags: `--dry-run` (change nothing), `--link-only` (skip installs).
 
 ### Managing Configurations with Stow
 
@@ -35,115 +32,56 @@ stow -R -t ~/.config .config
 
 ## Architecture & Structure
 
-### Configuration Organization
-
 ```
 .config/
-├── opencode/          # OpenCode agent configurations
-│   └── agent/         # Agent prompt files (companion, senior-developer, etc.)
-├── tmux/              # Tmux configuration and scripts
-├── zsh/               # Zsh shell configuration
-├── ghostty/           # Ghostty terminal emulator config
-└── yabai/             # Yabai window manager config
+├── ghostty/           # Ghostty terminal config
+├── lazygit/           # lazygit config
+├── nvim/              # LazyVim config
+├── opencode/agent/    # OpenCode agent prompts
+├── tmux/              # tmux config
+└── zsh/               # .zshrc, .p10k.zsh, completions, mouse fixes
 
 .claude/
-└── settings.json      # Claude Code settings
+└── settings.json      # Claude Code settings (status line, plugins)
 
+.github/
+├── workflows/         # CI, Claude PR review
+└── ISSUE_TEMPLATE/    # Bug, new-machine setup, config change
 ```
 
-### Agent System Architecture
+### OpenCode Agents (`.config/opencode/agent/`)
 
-**OpenCode Agents** (`.config/opencode/agent/`):
-
-- Defined as markdown files with YAML frontmatter
-- Include: companion, senior-developer, solution-architect, code-reviewer, test-engineer, technical-writer, devops-engineer, diagram-specialist, requirements-analyst
-- Primary agent is `companion` (read-only, research-focused)
-- Specialized agents have different tool permissions and capabilities
-
-Agent configurations specify:
-
-- Model selection and temperature
-- Available tools (write, edit, bash, webfetch, read, etc.)
-- Permission policies (bash command restrictions)
-- Operational mode (primary/specialized)
-
-### Shell Environment
-
-**Zsh Configuration** (`.config/zsh/.zshrc`):
-
-- Oh-My-Zsh with Powerlevel10k theme
-- Git plugin enabled
-- Key aliases:
-  - `n` - Open neovim in current directory
-  - `cc` - Claude Code, `oc` - OpenCode
-  - `gaa` - Git add all
-  - `gcm` - Git commit with message
-  - `gpsh` - Git push
-  - `gss` - Git status short
-  - Docker shortcuts: `dtable`, `dstart`
-
-**Tmux Configuration** (`.config/tmux/tmux.conf`):
-
-- Prefix: `Ctrl+a` (instead of default Ctrl+b)
-- Vim keybindings in copy mode
-- Custom split shortcuts: `|` (vertical), `-` (horizontal)
-- Pane navigation: `h/j/k/l`
-- Pane resizing: `Ctrl+a` then `H/J/K/L` (repeatable)
-- Mouse support enabled
-- History limit: 10,000 lines
-
-## Development Workflow
-
-### Adding New Configurations
-
-1. Place config files in `.config/<application>/`
-2. Restow the package: `stow -R -t ~/.config .config`
-3. Verify `~/.config/<application>` is a symlink into this repo
-4. Commit changes to repository
-
-### Modifying Agents
-
-**OpenCode agents**: Edit markdown files in `.config/opencode/agent/`
-
-- Update YAML frontmatter for model, temperature, tools, permissions
-- Modify agent personality and capabilities in markdown body
-
-## Key Configuration Patterns
-
-### Permission-Based Agent Design
-
-Agents use granular permission controls:
+- Markdown files with YAML frontmatter: model, temperature, tools, permissions, mode
+- companion (primary, read-only), senior-developer, solution-architect, code-reviewer, test-engineer, technical-writer, devops-engineer, diagram-specialist, requirements-analyst
+- Bash permissions are granular, for example:
 
 ```yaml
 permission:
   bash:
     "rm *": deny
-    "rm -*": deny
     "sudo *": ask
     "*": allow
 ```
 
-### Frontmatter Standards
+### Shell Environment
 
-Markdown files follow consistent frontmatter patterns:
+**Zsh** (`.config/zsh/.zshrc`):
 
-- Agent configs: description, mode, model, temperature, tools, permissions
-- Output files (fabyt): tags array, url metadata
-- Documentation: title, date, tags
+- Powerlevel10k instant prompt must stay at the very top of `.zshrc`, and nothing above it may print or read from the terminal
+- Oh My Zsh with the Powerlevel10k theme and the git plugin
+- `.p10k.zsh` lives in `.config/zsh/` (ZDOTDIR) and is tracked, so a new machine gets the prompt without the wizard
+- Machine-specific settings go in `.config/zsh/.zshrc.local` (gitignored)
+- Sources `tmux.zsh` (`tmx`), `powerctl.zsh` and `sky.zsh` (generated completions), and `mouse.zsh` (stops stray mouse reports after sleep)
+- Aliases: `n`, `ll`, `o`, `gaa`, `gcm`, `gpsh`, `gss`, `cc` (claude), `oc` (opencode), `dtable`, `dstart`
 
-### Stow-Based Linking
+**Tmux** (`.config/tmux/tmux.conf`):
 
-Configurations are NOT copied but symlinked:
-
-- Allows editing configs in dotfiles repo directly
-- Changes immediately affect active system
-- Easy to version control and sync across machines
+- Prefix `Ctrl+a`; splits `|` and `-`; navigate `h/j/k/l`; resize `H/J/K/L` (repeatable)
+- Vi copy mode, mouse on, 10,000 lines of history, OSC 52 clipboard
 
 ## Notes for Future Modifications
 
-- The companion agent is read-only focused (write: false, edit: false)
-- Other OpenCode agents have write capabilities for code implementation
-- Tmux config sources from `~/.config/tmux/tmux.conf` (not default location)
-- Zsh config sources tmux.zsh for tmux-specific shell integration
-- Custom scripts in `bin/` should include dependency checks and help text
-- When adding a Homebrew dependency of the setup itself, add it to `BREW_PACKAGES` in `install.sh`
+- `~/.config/zsh` is a link into this repo, so zsh writes its history and `.zcompdump` here. They are gitignored. Keep it that way; history can contain secrets
+- Tmux config lives at `~/.config/tmux/tmux.conf`, not the default location
+- When the setup itself needs a new Homebrew package, add it to `BREW_PACKAGES` in `install.sh` (and `LINUX_PACKAGES` if it applies)
+- Don't add shell aliases that bypass safety prompts (for example `--dangerously-skip-permissions`)
