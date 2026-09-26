@@ -10,6 +10,7 @@ Every file under `.config/` and `.claude/` is **live** on each machine that ran 
 
 1. Branch from `main`. Name it after the change: `fix/tmux-resize`, `install-backups`.
 2. Keep each commit to one change, with a message that says what changed on the machine and why. Wrap the body at 72 columns.
+   Commits are signed. `.config/git/config` does this automatically; see README, "Signed commits".
 3. Open a PR and fill in the template. CI must be green before merge.
 4. Merge with a merge commit or a squash; don't force-push `main`.
 
@@ -61,7 +62,9 @@ Homebrew and apt packages still install system-wide; everything else stays in `$
 
 - Read CLAUDE.md, then this file, before editing.
 - Don't run `./install.sh` against the real `$HOME` unless the user asked for it. Use a throwaway home.
-- Don't commit, push, or open PRs unless asked. When you do, follow the workflow above and end commit messages with your co-author trailer.
+- Don't commit, push, or open PRs unless asked. When you do, follow the workflow above.
+- **No AI attribution.** No `Co-Authored-By` trailers for AI agents in commits, and no "Generated with …" lines in PRs. The human who asked for the change is the author.
+- Never bypass signing (`--no-gpg-sign`, `-c commit.gpgSign=false`). If signing fails, stop and say why.
 - Prefer small, reviewable PRs. If a change needs a decision the user hasn't made (removing a tool, changing a keybinding), ask first.
 - In GitHub, mention `@claude` on an issue or PR to have the action work on it. Every PR also gets an automatic Claude review against these rules.
 
