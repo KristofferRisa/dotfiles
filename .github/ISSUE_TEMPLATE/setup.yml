@@ -1,0 +1,49 @@
+name: New machine setup problem
+description: install.sh failed, or something was missing or broken after a fresh install
+labels: [installer, bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Run the installer with `--dry-run` first if you can; its output shows exactly what it planned to do.
+  - type: dropdown
+    id: os
+    attributes:
+      label: Machine
+      options:
+        - macOS, Apple Silicon
+        - macOS, Intel
+        - Linux, Debian/Ubuntu (apt)
+        - Linux, Arch (pacman)
+        - Linux, Fedora (dnf)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: entry
+    attributes:
+      label: How was it run?
+      options:
+        - curl … | bash (install.kristoffer.dev or raw GitHub)
+        - ./install.sh from a checkout
+        - ./install.sh --link-only
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What broke, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Installer output
+      description: Paste the full output. Check it for tokens or private paths first.
+      render: shell
+  - type: textarea
+    id: before
+    attributes:
+      label: State before the install
+      description: Anything already there? For example, Claude Code or VS Code had been opened, Homebrew was installed, an existing ~/.config/zsh.

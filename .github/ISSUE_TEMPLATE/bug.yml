@@ -1,0 +1,46 @@
+name: Config bug
+description: A config misbehaves on a machine that is already set up
+labels: [bug]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - zsh
+        - tmux
+        - nvim
+        - ghostty
+        - lazygit
+        - Claude Code / OpenCode
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens
+      description: What you did, what you saw, what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. Open a new Ghostty window
+        2. Sleep the laptop, wake it
+        3. Move the mouse over the prompt
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Machine and versions
+      placeholder: macOS 26.5, Ghostty 1.3, tmux 3.5a, nvim 0.12
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors or logs
+      description: For zsh startup problems, `zsh -xi -c exit 2>&1 | tail -50` helps.
+      render: shell
