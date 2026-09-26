@@ -2,7 +2,8 @@
 # Install dotfiles.
 #
 #   curl -fsSL https://install.kristoffer.dev/dotfiles | bash
-#   ./install.sh
+#   curl -fsSL https://install.kristoffer.dev/dotfiles | bash -s -- --dry-run
+#   ./install.sh [--dry-run] [--link-only]
 #
 # A piped shell is still reading this script from stdin, so the first run
 # only clones the repo and re-execs the on-disk copy. The on-disk copy is
@@ -11,9 +12,34 @@ set -euo pipefail
 
 REPO_URL="${DOTFILES_REPO:-https://github.com/KristofferRisa/dotfiles.git}"
 DEST="${DOTFILES_DEST:-$HOME/dotfiles}"
+BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 
-# Folded in from brew.sh. Stow is required. lazygit matches the config in this repo.
-BREW_PACKAGES=(stow lazygit)
+# Stow is required. The rest are the tools this repo configures.
+BREW_PACKAGES=(stow lazygit tmux neovim)
+# Distro neovim is usually older than LazyVim supports, so Linux skips it.
+LINUX_PACKAGES=(git stow zsh tmux)
+
+DRY_RUN=0
+LINK_ONLY=0
+
+usage() {
+  cat <<'EOF'
+Usage: install.sh [--dry-run] [--link-only]
+
+Installs what this repo's configs need, then links them with GNU Stow.
+
+  --dry-run     Show what would be installed, linked, and moved. Change nothing.
+  --link-only   Skip package, Oh My Zsh, and Powerlevel10k installs. Only link.
+  -h, --help    Show this help.
+
+Files that block a link are moved to ~/.dotfiles-backup/<timestamp>/.
+Nothing is deleted.
+
+Environment:
+  DOTFILES_REPO   Repo to clone when piped (default: GitHub)
+  DOTFILES_DEST   Where to clone it (default: ~/dotfiles)
+EOF
+}
 
 log() {
   printf '%s\n' "$*"
@@ -22,6 +48,30 @@ log() {
 die() {
   printf 'Error: %s\n' "$*" >&2
   exit 1
+}
+
+# Print a command in dry-run mode, run it otherwise.
+run() {
+  if ((DRY_RUN)); then
+    log "  would run: $*"
+  else
+    "$@"
+  fi
+}
+
+parse_args() {
+  while (($# > 0)); do
+    case "$1" in
+      --dry-run) DRY_RUN=1 ;;
+      --link-only) LINK_ONLY=1 ;;
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      *) die "Unknown option: $1 (see --help)" ;;
+    esac
+    shift
+  done
 }
 
 running_from_checkout() {
@@ -46,6 +96,11 @@ add_brew_to_path() {
 ensure_homebrew() {
   add_brew_to_path && return 0
 
+  if ((DRY_RUN)); then
+    log "  would install Homebrew"
+    return 1
+  fi
+
   log "Installing Homebrew..."
   NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   add_brew_to_path || die "Homebrew installed, but it is not on PATH. Open a new terminal and run ./install.sh again."
@@ -60,7 +115,11 @@ install_brew_packages() {
   export HOMEBREW_NO_AUTO_UPDATE=1
   export HOMEBREW_NO_ENV_HINTS=1
 
-  ensure_homebrew
+  if ! ensure_homebrew; then
+    # Dry run without Homebrew: everything would be installed.
+    log "  would run: brew install ${BREW_PACKAGES[*]}"
+    return 0
+  fi
 
   for pkg in "${BREW_PACKAGES[@]}"; do
     if ! brew list --formula "$pkg" >/dev/null 2>&1; then
@@ -68,60 +127,55 @@ install_brew_packages() {
     fi
   done
 
-  if ! command -v zsh >/dev/null 2>&1; then
-    missing+=(zsh)
-  fi
-  if ! command -v git >/dev/null 2>&1; then
-    missing+=(git)
-  fi
+  command -v zsh >/dev/null 2>&1 || missing+=(zsh)
+  command -v git >/dev/null 2>&1 || missing+=(git)
 
   if ((${#missing[@]} > 0)); then
     log "Installing: ${missing[*]}"
-    brew install "${missing[@]}"
+    run brew install "${missing[@]}"
   else
     log "Homebrew packages already installed: ${BREW_PACKAGES[*]}"
   fi
 }
 
 install_linux_packages() {
-  local install=()
+  local pkg
+  local missing=()
 
-  command -v git >/dev/null 2>&1 || install+=(git)
-  command -v stow >/dev/null 2>&1 || install+=(stow)
-  command -v zsh >/dev/null 2>&1 || install+=(zsh)
+  for pkg in "${LINUX_PACKAGES[@]}"; do
+    command -v "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
+  done
 
-  if ((${#install[@]} == 0)); then
-    log "git, stow, and zsh are already installed"
+  if ((${#missing[@]} == 0)); then
+    log "Already installed: ${LINUX_PACKAGES[*]}"
     return 0
   fi
 
-  log "Installing: ${install[*]}"
+  log "Installing: ${missing[*]}"
   if command -v apt-get >/dev/null 2>&1; then
-    sudo apt-get update
-    sudo apt-get install -y "${install[@]}"
+    run sudo apt-get update
+    run sudo apt-get install -y "${missing[@]}"
   elif command -v pacman >/dev/null 2>&1; then
-    sudo pacman -S --needed --noconfirm "${install[@]}"
+    run sudo pacman -S --needed --noconfirm "${missing[@]}"
   elif command -v dnf >/dev/null 2>&1; then
-    sudo dnf install -y "${install[@]}"
+    run sudo dnf install -y "${missing[@]}"
   else
-    die "Install these packages with your package manager, then re-run: ${install[*]}"
+    die "Install these packages with your package manager, then re-run: ${missing[*]}"
   fi
 }
 
-ensure_dependencies() {
+install_packages() {
   case "$(uname -s)" in
     Darwin) install_brew_packages ;;
     Linux) install_linux_packages ;;
-    *)
-      command -v stow >/dev/null 2>&1 || die "Install GNU Stow, then re-run this script."
-      command -v git >/dev/null 2>&1 || die "Install git, then re-run this script."
-      command -v zsh >/dev/null 2>&1 || die "Install zsh, then re-run this script."
-      ;;
   esac
+}
 
-  command -v stow >/dev/null 2>&1 || die "GNU Stow is still not available."
-  command -v git >/dev/null 2>&1 || die "git is still not available."
-  command -v zsh >/dev/null 2>&1 || die "zsh is still not available."
+require_tools() {
+  local tool
+  for tool in git stow zsh; do
+    command -v "$tool" >/dev/null 2>&1 || die "$tool is not installed. Install it, or run without --link-only."
+  done
 }
 
 # Oh My Zsh treats ZDOTDIR as its install location and, when stdin is not a
@@ -137,8 +191,12 @@ install_shell_framework() {
 
   if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     log "Installing Oh My Zsh..."
-    ZSH="$HOME/.oh-my-zsh" ZDOTDIR= \
-      sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended --keep-zshrc
+    if ((DRY_RUN)); then
+      log "  would run the Oh My Zsh installer (--unattended --keep-zshrc)"
+    else
+      ZSH="$HOME/.oh-my-zsh" ZDOTDIR='' \
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended --keep-zshrc
+    fi
   else
     log "Oh My Zsh already installed"
   fi
@@ -152,115 +210,153 @@ install_shell_framework() {
 
   if [[ ! -d "$theme_dir" ]]; then
     log "Installing Powerlevel10k..."
-    mkdir -p "$(dirname "$theme_dir")"
-    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$theme_dir"
+    run mkdir -p "$(dirname "$theme_dir")"
+    run git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$theme_dir"
   else
     log "Powerlevel10k already installed"
   fi
 }
 
+# Stow names each blocked path relative to the target directory. Stow 2.4
+# says "... over existing target X since ...", older releases end the line
+# with ": X".
+stow_conflicts() {
+  sed -n \
+    -e 's/.*over existing target \(.*\) since .*/\1/p' \
+    -e 's/.*existing target is [^:]*: \(.*\)$/\1/p'
+}
+
+# Move everything that blocks a link into BACKUP_DIR, keeping its path
+# relative to $HOME so it is obvious where each file came from.
+back_up_conflicts() {
+  local target="$1"
+  local conflicts="$2"
+  local rel src dest
+
+  while IFS= read -r rel; do
+    [[ -n "$rel" ]] || continue
+    src="$target/$rel"
+    dest="$BACKUP_DIR/${src#"$HOME"/}"
+
+    if ((DRY_RUN)); then
+      log "  would move $src -> $dest"
+    else
+      mkdir -p "$(dirname "$dest")"
+      mv "$src" "$dest"
+      log "  moved $src -> $dest"
+    fi
+  done <<<"$conflicts"
+}
+
 stow_package() {
   local package="$1"
   local target="$2"
+  local preview conflicts
 
   if [[ ! -d "$DOTFILES_DIR/$package" ]]; then
     return 0
   fi
 
-  local preview
-
-  mkdir -p "$target"
   log "Linking $package -> $target"
-
-  # Dry-run first so a conflict stops us before any symlink is written.
-  # Stow's simulation warning is noise; real conflicts stay in the output.
-  if ! preview="$(stow -n -t "$target" -d "$DOTFILES_DIR" "$package" 2>&1)"; then
-    printf '%s\n' "$preview" | grep -v 'simulation mode' >&2 || true
-    die "Conflicts linking $package into $target. Move the listed files aside and run ./install.sh again."
+  if [[ ! -d "$target" ]]; then
+    run mkdir -p "$target"
+    # A dry run cannot preview a target that does not exist yet, and
+    # nothing can conflict inside it.
+    [[ -d "$target" ]] || return 0
   fi
 
-  stow -R -t "$target" -d "$DOTFILES_DIR" "$package"
+  # Dry-run first, so every blocking file is known before anything moves.
+  if ! preview="$(stow -n -t "$target" -d "$DOTFILES_DIR" "$package" 2>&1)"; then
+    conflicts="$(printf '%s\n' "$preview" | stow_conflicts)"
+    if [[ -z "$conflicts" ]]; then
+      printf '%s\n' "$preview" | grep -v 'simulation mode' >&2 || true
+      die "Stow could not link $package into $target."
+    fi
+    back_up_conflicts "$target" "$conflicts"
+  fi
+
+  run stow -R -t "$target" -d "$DOTFILES_DIR" "$package"
 }
 
-# ~/.zshenv is read before ZDOTDIR takes effect. After that, zsh no longer
-# reads ~/.zprofile, which is where Homebrew puts itself.
+# ~/.zshenv is read before ZDOTDIR takes effect. .zshrc puts Homebrew on
+# PATH itself, so ZDOTDIR is all this file needs.
 setup_zshenv() {
   local zshenv="$HOME/.zshenv"
-  local brew_snippet
-  brew_snippet='if [[ -x /opt/homebrew/bin/brew ]]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-elif [[ -x /usr/local/bin/brew ]]; then
-  eval "$(/usr/local/bin/brew shellenv)"
-fi'
+  # Written literally: $HOME expands when zsh reads the file.
+  # shellcheck disable=SC2016
+  local line='export ZDOTDIR="$HOME/.config/zsh"'
 
-  if [[ ! -f "$zshenv" ]]; then
-    cat >"$zshenv" <<EOF
-export ZDOTDIR="\$HOME/.config/zsh"
-
-$brew_snippet
-EOF
-    log "Wrote $zshenv"
-    return 0
-  fi
-
-  if ! grep -q 'ZDOTDIR' "$zshenv"; then
-    printf '\nexport ZDOTDIR="$HOME/.config/zsh"\n' >>"$zshenv"
-    log "Added ZDOTDIR to $zshenv"
-  else
+  if [[ -f "$zshenv" ]] && grep -q 'ZDOTDIR' "$zshenv"; then
     log "ZDOTDIR already set in $zshenv"
-  fi
-
-  if ! grep -q 'homebrew/bin/brew' "$zshenv"; then
-    printf '\n%s\n' "$brew_snippet" >>"$zshenv"
-    log "Added Homebrew to PATH in $zshenv"
+  elif ((DRY_RUN)); then
+    log "  would add to $zshenv: $line"
+  else
+    printf '%s\n' "$line" >>"$zshenv"
+    log "Added ZDOTDIR to $zshenv"
   fi
 }
 
 bootstrap() {
-  case "$(uname -s)" in
-    Darwin) install_brew_packages ;;
-    Linux) install_linux_packages ;;
-    *) command -v git >/dev/null 2>&1 || die "Install git, then re-run this script." ;;
-  esac
+  local dest="$DEST"
 
-  if [[ -d "$DEST/.git" ]]; then
-    log "Updating $DEST"
-    git -C "$DEST" pull --ff-only
-  elif [[ -e "$DEST" ]]; then
-    die "$DEST already exists and is not a git checkout. Move it or set DOTFILES_DEST."
+  if ((DRY_RUN)); then
+    # Look without touching ~/dotfiles: clone to a throwaway directory.
+    command -v git >/dev/null 2>&1 || die "A dry run needs git to fetch the repo. Install git, or run without --dry-run."
+    dest="$(mktemp -d)/dotfiles"
+    log "Dry run: cloning $REPO_URL into $dest"
+    git clone --quiet --depth=1 "$REPO_URL" "$dest"
   else
-    log "Cloning $REPO_URL into $DEST"
-    git clone "$REPO_URL" "$DEST"
+    ((LINK_ONLY)) || install_packages
+    command -v git >/dev/null 2>&1 || die "Install git, then re-run this script."
+
+    if [[ -d "$dest/.git" ]]; then
+      log "Updating $dest"
+      git -C "$dest" pull --ff-only
+    elif [[ -e "$dest" ]]; then
+      die "$dest already exists and is not a git checkout. Move it or set DOTFILES_DEST."
+    else
+      log "Cloning $REPO_URL into $dest"
+      git clone "$REPO_URL" "$dest"
+    fi
   fi
 
-  exec bash "$DEST/install.sh" "$@" < /dev/null
+  exec bash "$dest/install.sh" "$@" </dev/null
 }
 
-if ! running_from_checkout; then
-  bootstrap "$@"
-fi
+main() {
+  parse_args "$@"
 
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Claude Code writes its own ~/.claude/settings.json on first launch, which
-# is usually before this script runs on a new machine. Keep it as a backup
-# so the repo's settings can be linked in its place.
-backup_claude_settings() {
-  local settings="$HOME/.claude/settings.json"
-
-  if [[ -f "$settings" && ! -L "$settings" ]]; then
-    local backup="$settings.backup-$(date +%Y%m%d%H%M%S)"
-    mv "$settings" "$backup"
-    log "Moved existing $settings to $backup"
+  if ! running_from_checkout; then
+    bootstrap "$@"
   fi
+
+  DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  ((DRY_RUN)) && log "Dry run: nothing will be changed."
+
+  if ((LINK_ONLY)); then
+    require_tools
+  else
+    install_packages
+    install_shell_framework
+  fi
+
+  if ! command -v stow >/dev/null 2>&1; then
+    ((DRY_RUN)) || die "GNU Stow is still not available."
+    log "Stow is not installed yet, so the link preview is skipped."
+  else
+    stow_package .config "$HOME/.config"
+    stow_package .claude "$HOME/.claude"
+  fi
+  setup_zshenv
+
+  if ((DRY_RUN)); then
+    log "Dry run done. Run again without --dry-run to apply."
+    return 0
+  fi
+
+  log "Done. Dotfiles are linked from $DOTFILES_DIR"
+  [[ -d "$BACKUP_DIR" ]] && log "Files that were in the way are in $BACKUP_DIR"
+  log "Open a new terminal so zsh reads ~/.config/zsh."
 }
 
-ensure_dependencies
-install_shell_framework
-stow_package .config "$HOME/.config"
-backup_claude_settings
-stow_package .claude "$HOME/.claude"
-setup_zshenv
-
-log "Done. Dotfiles are linked from $DOTFILES_DIR"
-log "Open a new terminal so zsh reads ~/.config/zsh."
+main "$@"
