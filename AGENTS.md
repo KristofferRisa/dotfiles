@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for AI coding agents (Claude Code, OpenCode, and others) working in this repository.
 
 **Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing anything.** It has the rules for commits, PRs, testing, and what CI checks. This file describes how the repo is put together.
 
@@ -43,11 +43,14 @@ stow -R -t ~/.config .config
 └── zsh/               # .zshrc, .p10k.zsh, completions, mouse fixes
 
 .claude/
-└── settings.json      # Claude Code settings (status line, plugins)
+├── settings.json      # Claude Code settings (status line, plugins)
+└── statusline/        # Status line: bash + jq, no npm packages
 
 .github/
-├── workflows/         # CI, Claude PR review
+├── workflows/         # CI, PR labeler
 └── ISSUE_TEMPLATE/    # Bug, new-machine setup, config change
+
+tests/statusline/      # Fixture tests for the status line cost math
 ```
 
 ### OpenCode Agents (`.config/opencode/agent/`)
@@ -86,10 +89,20 @@ permission:
 - `allowed_signers` lists the public keys trusted for local verification. Add each machine's key
 - Machine-specific overrides go in `config.local` (gitignored, included last)
 
+### Claude Code status line (`.claude/statusline/`)
+
+- `statusline.sh` reads Claude Code's JSON on stdin and prints two lines: folder, git, model and effort, and context on the first; session cost, today's cost, cache hit rate, and 5h/7d rate limits on the second
+- `usage.jq` sums every transcript under `~/.claude/projects` (subagent files too). It counts each API response once (`message.id` + `requestId`) and prices 5-minute and 1-hour cache writes and fast mode separately
+- `pricing.json` is the only place prices live. A model is priced by the longest key it starts with. An unknown model shows `~` and "unknown price"; never guess a price. Update it when a model launches, from Anthropic's pricing docs
+- `render.jq` draws the output (Catppuccin Mocha colours; honours `NO_COLOR`)
+- `statusline.sh --report` prints today's cost by model. `CLAUDE_STATUSLINE_DEBUG=1` saves the raw input to `~/.cache/claude-statusline/last-input.json`
+- Change the pricing math only together with `tests/statusline/`, whose expected dollar amounts were worked out by hand
+
 ## Notes for Future Modifications
 
 - `.config/.stow-local-ignore` keeps zsh state (history, `.zcompdump`) and machine-local files from being linked. It replaces Stow's defaults, so keep those listed
 - `~/.config/zsh` is a link into this repo, so zsh writes its history and `.zcompdump` here. They are gitignored. Keep it that way; history can contain secrets
 - Tmux config lives at `~/.config/tmux/tmux.conf`, not the default location
+- The status line needs `jq`. It ships with macOS 15+, and the installer adds it everywhere else
 - When the setup itself needs a new Homebrew package, add it to `BREW_PACKAGES` in `install.sh` (and `LINUX_PACKAGES` if it applies)
 - Don't add shell aliases that bypass safety prompts (for example `--dangerously-skip-permissions`)

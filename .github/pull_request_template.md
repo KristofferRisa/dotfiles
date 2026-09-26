@@ -12,6 +12,6 @@
 
 ## Checklist
 
-- [ ] README.md and CLAUDE.md still match (aliases, keys, installer steps)
+- [ ] README.md and AGENTS.md still match (aliases, keys, installer steps)
 - [ ] Nothing machine-specific or secret is committed (use `.zshrc.local`)
 - [ ] New Homebrew dependency added to `BREW_PACKAGES` (if any)
