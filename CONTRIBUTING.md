@@ -1,6 +1,6 @@
 # Contributing
 
-These are the working rules for this repo, for people and for AI agents (Claude Code, OpenCode, the `@claude` GitHub action). [CLAUDE.md](CLAUDE.md) describes how the repo is laid out; this file says how to change it.
+These are the working rules for this repo, for people and for AI agents (Claude Code, OpenCode, and others). [AGENTS.md](AGENTS.md) describes how the repo is laid out; this file says how to change it.
 
 ## The one thing to remember
 
@@ -26,8 +26,9 @@ CI runs all of this, but it is faster to catch it locally.
 | `tmux.conf` | `tmux source-file ~/.config/tmux/tmux.conf` in a running session |
 | nvim Lua | `stylua --check .config/nvim` |
 | `.github/workflows/` | `actionlint` |
+| `.claude/statusline/` | `shellcheck .claude/statusline/statusline.sh` and `tests/statusline/run.sh` |
 
-`brew install shellcheck shfmt stylua actionlint` gets all of them.
+`brew install shellcheck shfmt stylua actionlint jq` gets all of them.
 
 ### Installer in a throwaway home
 
@@ -55,18 +56,17 @@ Homebrew and apt packages still install system-wide; everything else stays in `$
 - **zsh:** nothing above the Powerlevel10k instant-prompt block, and nothing that prints or prompts during startup. Machine-specific values (tokens, proxies, work paths) go in `.config/zsh/.zshrc.local`, which is gitignored.
 - **No hardcoded home paths.** Use `$HOME` or `~`, and detect Homebrew's prefix instead of assuming `/opt/homebrew`.
 - **No safety bypasses** in aliases or settings, such as `--dangerously-skip-permissions`.
-- **Keep docs in step.** A new alias, keybinding, or installer step goes in README.md and CLAUDE.md in the same PR.
+- **Keep docs in step.** A new alias, keybinding, or installer step goes in README.md and AGENTS.md in the same PR.
 - **Secrets never land here.** zsh history and `.zcompdump` are written inside this repo; they are gitignored and CI runs gitleaks. Don't weaken either.
 
 ## For AI agents
 
-- Read CLAUDE.md, then this file, before editing.
+- Read AGENTS.md, then this file, before editing.
 - Don't run `./install.sh` against the real `$HOME` unless the user asked for it. Use a throwaway home.
 - Don't commit, push, or open PRs unless asked. When you do, follow the workflow above.
 - **No AI attribution.** No `Co-Authored-By` trailers for AI agents in commits, and no "Generated with …" lines in PRs. The human who asked for the change is the author.
 - Never bypass signing (`--no-gpg-sign`, `-c commit.gpgSign=false`). If signing fails, stop and say why.
 - Prefer small, reviewable PRs. If a change needs a decision the user hasn't made (removing a tool, changing a keybinding), ask first.
-- In GitHub, mention `@claude` on an issue or PR to have the action work on it. Every PR also gets an automatic Claude review against these rules.
 
 ## Issues
 
