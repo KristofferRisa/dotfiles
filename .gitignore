@@ -1,2 +1,8 @@
 # Environment-specific configuration files
 .config/zsh/.zshrc.local
+
+# zsh writes its state next to its config — and ~/.config/zsh is a link into
+# this repo. Shell history can hold tokens; never let `gaa` pick it up.
+.config/zsh/.zsh_history
+.config/zsh/.zsh_sessions/
+.config/zsh/.zcompdump*
