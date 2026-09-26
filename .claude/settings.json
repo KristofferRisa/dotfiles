@@ -1,7 +1,8 @@
 {
   "statusLine": {
     "type": "command",
-    "command": "npx -y @owloops/claude-powerline@latest --style=powerline"
+    "command": "bash ~/.claude/statusline/statusline.sh",
+    "padding": 0
   },
   "enabledPlugins": {
     "pyright-lsp@claude-plugins-official": true,

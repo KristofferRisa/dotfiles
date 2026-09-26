@@ -15,9 +15,9 @@ DEST="${DOTFILES_DEST:-$HOME/dotfiles}"
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 
 # Stow is required. The rest are the tools this repo configures.
-BREW_PACKAGES=(stow lazygit tmux neovim)
+BREW_PACKAGES=(stow jq lazygit tmux neovim)
 # Distro neovim is usually older than LazyVim supports, so Linux skips it.
-LINUX_PACKAGES=(git stow zsh tmux)
+LINUX_PACKAGES=(git stow zsh tmux jq)
 
 DRY_RUN=0
 LINK_ONLY=0
