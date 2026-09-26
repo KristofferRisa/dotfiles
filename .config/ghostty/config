@@ -1,4 +1,7 @@
-term = xterm-256color
+# Leave TERM at Ghostty's default (xterm-ghostty). Forcing xterm-256color
+# makes programs request the legacy mouse protocol, and those reports show
+# up as typed text instead of mouse events. SSH still downgrades TERM via
+# Ghostty's shell integration.
 #theme = dark:,light:catppuccin-latte #dark:vesper,light:catppuccin-latte
 theme = Catppuccin Mocha
 #background = 282c34
@@ -6,3 +9,8 @@ theme = Catppuccin Mocha
 
 clipboard-read = allow
 clipboard-write = allow
+
+# After sleep, macOS often never delivers mouse-up. Ghostty then treats
+# every move as a drag, and click-to-move turns that drag into arrow keys
+# at the prompt. Selection and tmux/nvim mouse reporting still work.
+cursor-click-to-move = false
