@@ -1,0 +1,25 @@
+# Labels PRs by the part of the setup they touch. See workflows/labeler.yml.
+installer:
+  - changed-files:
+      - any-glob-to-any-file: install.sh
+zsh:
+  - changed-files:
+      - any-glob-to-any-file: .config/zsh/**
+tmux:
+  - changed-files:
+      - any-glob-to-any-file: .config/tmux/**
+nvim:
+  - changed-files:
+      - any-glob-to-any-file: .config/nvim/**
+terminal:
+  - changed-files:
+      - any-glob-to-any-file: .config/ghostty/**
+agents:
+  - changed-files:
+      - any-glob-to-any-file: [.config/opencode/**, .claude/**]
+docs:
+  - changed-files:
+      - any-glob-to-any-file: ["*.md", .config/**/README.md]
+ci:
+  - changed-files:
+      - any-glob-to-any-file: .github/**

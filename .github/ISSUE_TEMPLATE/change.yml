@@ -1,0 +1,30 @@
+name: Config change or new tool
+description: Add a tool, alias, keybinding, or setting; or change how something works
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What should change
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The annoyance or workflow this fixes.
+    validations:
+      required: true
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Does it touch the installer?
+      options:
+        - label: Needs a new package (add to BREW_PACKAGES / LINUX_PACKAGES in install.sh)
+        - label: Adds a new directory under .config/
+        - label: Needs a secret or machine-specific value (goes in .zshrc.local, not the repo)
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes for whoever implements it
+      description: Files, prior art, or anything that would help.

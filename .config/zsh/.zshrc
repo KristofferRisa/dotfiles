@@ -51,7 +51,6 @@ fi
 #----------------------
 # Claude Aliases
 # ----------------------
-alias c='claude --allow-dangerously-skip-permissions'
 alias cc='claude'
 alias oc='opencode'
 
@@ -77,6 +76,7 @@ alias gss='git status -s'
 source ~/.config/zsh/tmux.zsh
 source ~/.config/zsh/powerctl.zsh
 source ~/.config/zsh/sky.zsh
+source ~/.config/zsh/mouse.zsh
 
 # # ----------
 # # AZ completion
@@ -85,7 +85,8 @@ source ~/.config/zsh/sky.zsh
 # autoload bashcompinit && bashcompinit
 # source $(brew --prefix)/etc/bash_completion.d/az
 
-export GPG_TTY=$(tty)
+# $(tty) prints "not a tty" under instant prompt; $TTY is set by zsh.
+export GPG_TTY=$TTY
 
 # opencode
 export PATH=~/.opencode/bin:$PATH

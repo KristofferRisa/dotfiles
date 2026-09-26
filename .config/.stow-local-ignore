@@ -1,0 +1,27 @@
+# Stow skips anything matching these (Perl regexes; no slash = basename).
+# This file replaces Stow's built-in list, so its defaults are repeated here.
+
+# Stow defaults
+RCS
+.+,v
+CVS
+\.\#.+
+\.cvsignore
+\.svn
+_darcs
+\.hg
+\.git
+\.gitignore
+\.gitmodules
+.+~
+\#.*\#
+
+# ~/.config/zsh is a link into this repo on a real machine, so zsh writes its
+# state here. Never link one machine's state into another machine's home.
+\.zsh_history
+\.zsh_sessions
+\.zcompdump.*
+
+# Machine-specific, gitignored files
+\.zshrc\.local
+config\.local

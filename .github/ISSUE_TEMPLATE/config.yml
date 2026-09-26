@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup guide
+    url: https://github.com/KristofferRisa/dotfiles#install
+    about: Install steps, flags, and troubleshooting.
