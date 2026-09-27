@@ -38,7 +38,6 @@ stow -R -t ~/.config .config
 ├── git/               # Global git config + allowed_signers (SSH commit signing)
 ├── lazygit/           # lazygit config
 ├── nvim/              # LazyVim config
-├── opencode/agent/    # OpenCode agent prompts
 ├── tmux/              # tmux config
 └── zsh/               # .zshrc, .p10k.zsh, completions, mouse fixes
 
@@ -51,20 +50,6 @@ stow -R -t ~/.config .config
 └── ISSUE_TEMPLATE/    # Bug, new-machine setup, config change
 
 tests/statusline/      # Fixture tests for the status line cost math
-```
-
-### OpenCode Agents (`.config/opencode/agent/`)
-
-- Markdown files with YAML frontmatter: model, temperature, tools, permissions, mode
-- companion (primary, read-only), senior-developer, solution-architect, code-reviewer, test-engineer, technical-writer, devops-engineer, diagram-specialist, requirements-analyst
-- Bash permissions are granular, for example:
-
-```yaml
-permission:
-  bash:
-    "rm *": deny
-    "sudo *": ask
-    "*": allow
 ```
 
 ### Shell Environment
