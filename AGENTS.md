@@ -76,6 +76,7 @@ permission:
 - `.p10k.zsh` lives in `.config/zsh/` (ZDOTDIR) and is tracked, so a new machine gets the prompt without the wizard
 - Machine-specific settings go in `.config/zsh/.zshrc.local` (gitignored)
 - Sources `tmux.zsh` (`tmx`), `powerctl.zsh` and `sky.zsh` (generated completions), and `mouse.zsh` (stops stray mouse reports after sleep)
+- Exports `CLAUDE_CODE_ENABLE_TELEMETRY=1`; the OTel exporter and endpoint go in `.zshrc.local`
 - Aliases: `n`, `ll`, `o`, `gaa`, `gcm`, `gpsh`, `gss`, `cc` (claude), `oc` (opencode), `dtable`, `dstart`
 
 **Tmux** (`.config/tmux/tmux.conf`):

@@ -54,6 +54,10 @@ fi
 alias cc='claude'
 alias oc='opencode'
 
+# Turn on Claude Code's OpenTelemetry export. Where it goes (exporter,
+# endpoint, headers) is per machine, so that belongs in .zshrc.local.
+export CLAUDE_CODE_ENABLE_TELEMETRY=1
+
 # ----------------------
 # Git Aliases
 # ----------------------
