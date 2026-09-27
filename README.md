@@ -102,14 +102,22 @@ Tmux, prefix `Ctrl+a`:
 
 ## Claude Code status line
 
-`.claude/statusline/` is a status line written in bash and `jq`. It needs no Node or npm package, and it takes about 80 ms per refresh.
+`.claude/statusline/` is a status line written in bash and `jq`. It needs no Node or npm package, and it takes about 50 ms per refresh.
 
 ```
-  Stavern  🌤️ 15° ↗2 m/s 💧82% │ Sun 27 Sep 11:23 │ CC 2.1.283
-   dotfiles   main ●3 ⇡2  Opus 5.5 · xhigh  ▰▰▰▱▱▱▱▱▱▱▱▱ 26% 256k/1M
- 5h ▰▰▰▰┃▰▱▱▱▱▱ 48% ⇡11% · resets 14:33 (3h10m) · 100% at 13:22 │ 7d ▰▰▱▱▱┃▱▱▱▱▱ 20% ⇣31% · resets Wed 22:29 (3d11h)
- session $6.84 · $4.56/h · 42.4k out · +412/-87 · 1h30m │ today $15.88 · cache 98% (saved $135)
+╭─  Stavern   🌤️ 15°  ↗ 2 m/s  💧 82%   ·   Sun 27 Sep  11:52   ·   CC 2.1.283  ──────────
+│
+│  PROJECT     dotfiles   main ●2  Opus 5.5 · xhigh
+│  CONTEXT   ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱   26%   256k of 1M
+│
+│  5 HOUR    ▰▰▰▰▰▰▰┃▰▰▰▱▱▱▱▱▱▱▱▱▱   48%   ⇡ 11%     resets 15:02      in 3h10m    ⚠ full by 13:52
+│  7 DAY     ▰▰▰▰▱▱▱▱▱▱┃▱▱▱▱▱▱▱▱▱▱   20%   ⇣ 31%     resets Wed 22:59  in 3d11h
+│
+│  SESSION   $6.84     $4.56/h     61.8k out    +412 −87    1h30m
+╰─ TODAY     $16.82    cache 98%   saved $143
 ```
+
+It is a panel: a header, then labelled rows in aligned columns, grouped into sections. The right edge stays open because Claude Code doesn't pass the terminal width. Sections with nothing to show are left out.
 
 - **header**: weather from [sky](https://github.com/KristofferRisa/sky-cli) (MET Norway) for sky's default location, the date and time, and the Claude Code version. Weather is fetched in the background at most every 10 minutes and hidden when sky is missing or the last fetch is over two hours old
 - **git**: `●` uncommitted files, `⇡`/`⇣` commits not yet pushed or pulled

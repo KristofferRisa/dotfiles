@@ -78,7 +78,7 @@ tests/statusline/      # Fixture tests for the status line cost math
 
 ### Claude Code status line (`.claude/statusline/`)
 
-- `statusline.sh` reads Claude Code's JSON on stdin and prints up to four lines: location, weather, time, and Claude Code version; folder, git, model and effort, and a context gauge; 5h/7d rate limits with a pace marker, reset time, and projected time to 100%; session and today's cost, burn rate, and cache hit rate
+- `statusline.sh` reads Claude Code's JSON on stdin and draws a panel: a header (location, weather, time, Claude Code version), then labelled rows in aligned columns: PROJECT (folder, git, model, effort) and CONTEXT; 5 HOUR and 7 DAY rate limits with a pace marker, reset time, and projected time to 100%; SESSION and TODAY cost, burn rate, and cache hit rate. `render.jq` pads plain text before coloring it, since escape codes have length but no width
 - Weather comes from the `sky` CLI (`kristofferrisa/sky/sky`, in `BREW_PACKAGES`). It is optional at runtime, fetched in the background into `~/.cache/claude-statusline/weather.json` at most every 10 minutes, and never blocks a render. Tests set `CLAUDE_STATUSLINE_WEATHER=0` so they never touch the network
 - `usage.jq` sums every transcript under `~/.claude/projects` (subagent files too). It counts each API response once (`message.id` + `requestId`) and prices 5-minute and 1-hour cache writes and fast mode separately
 - `pricing.json` is the only place prices live. A model is priced by the longest key it starts with. An unknown model shows `~` and "unknown price"; never guess a price. Update it when a model launches, from Anthropic's pricing docs
