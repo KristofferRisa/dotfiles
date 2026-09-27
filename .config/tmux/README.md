@@ -8,7 +8,7 @@ This is a simple yet powerful TMUX configuration designed to enhance your termin
 This config is part of the dotfiles and is linked with the rest of them:
 
 ```bash
-curl -fsSL https://install.kristoffer.dev/dotfiles | bash
+curl -fsSL https://kristoffer.dev/dotfiles/install | bash
 ```
 
 That links `~/.config/tmux/` to this folder. tmux 3.1+ reads `~/.config/tmux/tmux.conf` on its own.

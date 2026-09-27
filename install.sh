@@ -1,9 +1,9 @@
 #!/bin/bash
 # Install dotfiles.
 #
-#   curl -fsSL https://install.kristoffer.dev/dotfiles | bash
-#   curl -fsSL https://install.kristoffer.dev/dotfiles | bash -s -- --dry-run
-#   ./install.sh [--dry-run] [--link-only]
+#   curl -fsSL https://kristoffer.dev/dotfiles/install | bash
+#   curl -fsSL https://kristoffer.dev/dotfiles/install | bash -s -- --dry-run
+#   ./install.sh [--dry-run] [--link-only] [--update]
 #
 # A piped shell is still reading this script from stdin, so the first run
 # only clones the repo and re-execs the on-disk copy. The on-disk copy is
@@ -14,22 +14,27 @@ REPO_URL="${DOTFILES_REPO:-https://github.com/KristofferRisa/dotfiles.git}"
 DEST="${DOTFILES_DEST:-$HOME/dotfiles}"
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 
-# Stow is required. The rest are the tools this repo configures.
-BREW_PACKAGES=(stow jq lazygit tmux neovim)
+# Stow is required. The rest are the tools this repo configures. sky gives
+# the Claude Code status line its weather; the full name taps it on install.
+BREW_PACKAGES=(stow jq lazygit tmux neovim kristofferrisa/sky/sky)
 # Distro neovim is usually older than LazyVim supports, so Linux skips it.
 LINUX_PACKAGES=(git stow zsh tmux jq)
 
 DRY_RUN=0
 LINK_ONLY=0
+UPDATE=0
 
 usage() {
   cat <<'EOF'
-Usage: install.sh [--dry-run] [--link-only]
+Usage: install.sh [--dry-run] [--link-only] [--update]
 
 Installs what this repo's configs need, then links them with GNU Stow.
 
   --dry-run     Show what would be installed, linked, and moved. Change nothing.
   --link-only   Skip package, Oh My Zsh, and Powerlevel10k installs. Only link.
+  --update      Pull the latest changes into this checkout first, then install
+                and link as usual. Run this from ~/dotfiles instead of a manual
+                `git pull && ./install.sh`.
   -h, --help    Show this help.
 
 Files that block a link are moved to ~/.dotfiles-backup/<timestamp>/.
@@ -64,6 +69,7 @@ parse_args() {
     case "$1" in
       --dry-run) DRY_RUN=1 ;;
       --link-only) LINK_ONLY=1 ;;
+      --update) UPDATE=1 ;;
       -h | --help)
         usage
         exit 0
@@ -202,8 +208,8 @@ install_shell_framework() {
   fi
 
   # The template lands on ~/.zshrc only when the user did not already have one.
-  # ZDOTDIR points zsh at this repo, so that template would shadow nothing and
-  # just confuse the next login.
+  # link_home_zshrc replaces ~/.zshrc anyway; dropping the untouched template
+  # here keeps it out of the backup folder.
   if [[ "$had_zshrc" -eq 0 && -f "$HOME/.zshrc" && ! -L "$HOME/.zshrc" ]]; then
     rm -f "$HOME/.zshrc"
   fi
@@ -278,6 +284,26 @@ stow_package() {
   run stow -R -t "$target" -d "$DOTFILES_DIR" "$package"
 }
 
+# zsh itself reads $ZDOTDIR/.zshrc, but plenty of tools hardcode ~/.zshrc:
+# Claude Code's shell snapshot sources it, and installers (nvm, rustup,
+# grok) append to it. A stale ~/.zshrc means those tools see a different
+# shell than the terminal does, so point it at the same file.
+link_home_zshrc() {
+  local link="$HOME/.zshrc"
+  local want="$HOME/.config/zsh/.zshrc"
+
+  if [[ -L "$link" && "$(readlink "$link")" == "$want" ]]; then
+    log "$link already links to $want"
+    return 0
+  fi
+
+  if [[ -e "$link" || -L "$link" ]]; then
+    back_up_conflicts "$HOME" ".zshrc"
+  fi
+  run ln -s "$want" "$link"
+  ((DRY_RUN)) || log "Linked $link -> $want"
+}
+
 # ~/.zshenv is read before ZDOTDIR takes effect. .zshrc puts Homebrew on
 # PATH itself, so ZDOTDIR is all this file needs.
 setup_zshenv() {
@@ -286,7 +312,9 @@ setup_zshenv() {
   # shellcheck disable=SC2016
   local line='export ZDOTDIR="$HOME/.config/zsh"'
 
-  if [[ -f "$zshenv" ]] && grep -q 'ZDOTDIR' "$zshenv"; then
+  # Match the exact line: a comment or a ZDOTDIR pointing elsewhere must not
+  # count. Appending wins over an earlier export without deleting anything.
+  if [[ -f "$zshenv" ]] && grep -qxF "$line" "$zshenv"; then
     log "ZDOTDIR already set in $zshenv"
   elif ((DRY_RUN)); then
     log "  would add to $zshenv: $line"
@@ -349,6 +377,30 @@ bootstrap() {
   exec bash "$dest/install.sh" "$@" </dev/null
 }
 
+# `--update` from a checkout is `git pull && ./install.sh` in one step. Re-exec
+# afterward for the same reason bootstrap() does: this file may have just
+# changed underneath the running interpreter, and a fresh process reading it
+# off disk avoids acting on a half-old, half-new copy.
+update_checkout() {
+  [[ -d "$DOTFILES_DIR/.git" ]] || die "$DOTFILES_DIR is not a git checkout, so --update has nothing to pull."
+
+  if ((DRY_RUN)); then
+    log "  would run: git -C $DOTFILES_DIR pull --ff-only"
+    return 0
+  fi
+
+  log "Updating $DOTFILES_DIR"
+  git -C "$DOTFILES_DIR" pull --ff-only
+
+  # Bash 3.2 (macOS's system bash) treats "${arr[@]}" as unbound under -u when
+  # arr is empty, so only splice it in when --link-only actually set it.
+  if ((LINK_ONLY)); then
+    exec bash "$DOTFILES_DIR/install.sh" --link-only
+  else
+    exec bash "$DOTFILES_DIR/install.sh"
+  fi
+}
+
 main() {
   parse_args "$@"
 
@@ -358,6 +410,8 @@ main() {
 
   DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   ((DRY_RUN)) && log "Dry run: nothing will be changed."
+
+  ((UPDATE)) && update_checkout
 
   if ((LINK_ONLY)); then
     require_tools
@@ -373,6 +427,7 @@ main() {
     stow_package .config "$HOME/.config"
     stow_package .claude "$HOME/.claude"
   fi
+  link_home_zshrc
   setup_zshenv
   check_signing_key
 

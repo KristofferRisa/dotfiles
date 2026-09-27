@@ -12,12 +12,13 @@ Personal dotfiles. GNU Stow symlinks `.config` into `~/.config` and `.claude` in
 
 `install.sh` is the only setup entry point. Piped (`curl | bash`), it clones this repo to `~/dotfiles` and re-runs the on-disk script. From a checkout, it:
 
-- Installs dependencies. macOS: Homebrew if needed, then `BREW_PACKAGES` (stow, lazygit, tmux, neovim). Linux: `LINUX_PACKAGES` (git, stow, zsh, tmux) via apt, pacman, or dnf.
+- Installs dependencies. macOS: Homebrew if needed, then `BREW_PACKAGES` (stow, jq, lazygit, tmux, neovim, sky). Linux: `LINUX_PACKAGES` (git, stow, zsh, tmux) via apt, pacman, or dnf.
 - Installs Oh My Zsh (to `~/.oh-my-zsh`) and Powerlevel10k when missing. The Oh My Zsh installer must be called with `ZDOTDIR` empty and `--keep-zshrc`, or it overwrites the symlinked `.zshrc`.
 - Links `.config` and `.claude` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted.
 - Adds `ZDOTDIR` to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`, so `.zshrc` puts Homebrew on `PATH` itself.
+- Links `~/.zshrc` to `~/.config/zsh/.zshrc` (backing up whatever was there). zsh never reads it while `ZDOTDIR` is set, but Claude Code's shell snapshot and tool installers (nvm, rustup, grok) hardcode `~/.zshrc`; a stale copy there gives them a different shell than the terminal. Lines those installers append land in the repo `.zshrc`, so they show up in `git status`.
 
-Flags: `--dry-run` (change nothing), `--link-only` (skip installs).
+Flags: `--dry-run` (change nothing), `--link-only` (skip installs), `--update` (`git pull --ff-only` first, then install and link).
 
 ### Managing Configurations with Stow
 
@@ -38,7 +39,6 @@ stow -R -t ~/.config .config
 ├── git/               # Global git config + allowed_signers (SSH commit signing)
 ├── lazygit/           # lazygit config
 ├── nvim/              # LazyVim config
-├── opencode/agent/    # OpenCode agent prompts
 ├── tmux/              # tmux config
 └── zsh/               # .zshrc, .p10k.zsh, completions, mouse fixes
 
@@ -53,20 +53,6 @@ stow -R -t ~/.config .config
 tests/statusline/      # Fixture tests for the status line cost math
 ```
 
-### OpenCode Agents (`.config/opencode/agent/`)
-
-- Markdown files with YAML frontmatter: model, temperature, tools, permissions, mode
-- companion (primary, read-only), senior-developer, solution-architect, code-reviewer, test-engineer, technical-writer, devops-engineer, diagram-specialist, requirements-analyst
-- Bash permissions are granular, for example:
-
-```yaml
-permission:
-  bash:
-    "rm *": deny
-    "sudo *": ask
-    "*": allow
-```
-
 ### Shell Environment
 
 **Zsh** (`.config/zsh/.zshrc`):
@@ -76,6 +62,7 @@ permission:
 - `.p10k.zsh` lives in `.config/zsh/` (ZDOTDIR) and is tracked, so a new machine gets the prompt without the wizard
 - Machine-specific settings go in `.config/zsh/.zshrc.local` (gitignored)
 - Sources `tmux.zsh` (`tmx`), `powerctl.zsh` and `sky.zsh` (generated completions), and `mouse.zsh` (stops stray mouse reports after sleep)
+- Exports `CLAUDE_CODE_ENABLE_TELEMETRY=1`; the OTel exporter and endpoint go in `.zshrc.local`
 - Aliases: `n`, `ll`, `o`, `gaa`, `gcm`, `gpsh`, `gss`, `cc` (claude), `oc` (opencode), `dtable`, `dstart`
 
 **Tmux** (`.config/tmux/tmux.conf`):
@@ -91,7 +78,8 @@ permission:
 
 ### Claude Code status line (`.claude/statusline/`)
 
-- `statusline.sh` reads Claude Code's JSON on stdin and prints two lines: folder, git, model and effort, and context on the first; session cost, today's cost, cache hit rate, and 5h/7d rate limits on the second
+- `statusline.sh` reads Claude Code's JSON on stdin and draws a panel: a header (location, weather, time, Claude Code version), then labelled rows in aligned columns: PROJECT (folder, git, model, effort) and CONTEXT; 5 HOUR and 7 DAY rate limits with a pace marker, reset time, and projected time to 100%; SESSION and TODAY cost, burn rate, and cache hit rate. `render.jq` pads plain text before coloring it, since escape codes have length but no width. `--compact` (or `CLAUDE_STATUSLINE_COMPACT=1`) folds the same data into four lines
+- Weather comes from the `sky` CLI (`kristofferrisa/sky/sky`, in `BREW_PACKAGES`). It is optional at runtime, fetched in the background into `~/.cache/claude-statusline/weather.json` at most every 10 minutes, and never blocks a render. Tests set `CLAUDE_STATUSLINE_WEATHER=0` so they never touch the network
 - `usage.jq` sums every transcript under `~/.claude/projects` (subagent files too). It counts each API response once (`message.id` + `requestId`) and prices 5-minute and 1-hour cache writes and fast mode separately
 - `pricing.json` is the only place prices live. A model is priced by the longest key it starts with. An unknown model shows `~` and "unknown price"; never guess a price. Update it when a model launches, from Anthropic's pricing docs
 - `render.jq` draws the output (Catppuccin Mocha colours; honours `NO_COLOR`)

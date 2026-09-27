@@ -34,7 +34,8 @@ today="$(date -u -r "$stamp" '+%Y-%m-%dT%H:%M:%S.000Z' 2>/dev/null || date -u -d
 cp -R "$HERE/fixture/projects" "$WORK/"
 find "$WORK/projects" -name '*.jsonl' -exec sed -i.bak "s/@TODAY@/$today/g" {} \; -exec rm -f {}.bak \;
 
-export CLAUDE_CONFIG_DIR="$WORK" XDG_CACHE_HOME="$WORK/cache" NO_COLOR=1
+# No network in tests: weather is off unless a test seeds the cache.
+export CLAUDE_CONFIG_DIR="$WORK" XDG_CACHE_HOME="$WORK/cache" NO_COLOR=1 CLAUDE_STATUSLINE_WEATHER=0
 failures=0
 check() {
   if [[ "$2" == "$3" ]]; then
@@ -54,17 +55,39 @@ check "today unpriced" "$(jq '.today.unpriced' "$usage")" 1
 check "session cost" "$(jq '.session.cost * 100 | round' "$usage")" 9220
 check "cache savings" "$(jq '.today.saved * 100 | round' "$usage")" 380
 check "Opus 5.5 priced as Opus 5.5" "$(jq '.today.models["claude-opus-5-5"].cost * 100 | round' "$usage")" 3720
-check "rendered today" "$(grep -o 'today [~$0-9.]*' <<<"$out")" 'today ~$98.20'
-check "rendered session" "$(grep -o 'session [$0-9.]*' <<<"$out")" 'session $92.20'
+check "rendered today" "$(grep -o 'TODAY *[~$0-9.]*' <<<"$out" | tr -s ' ')" 'TODAY ~$98.20'
+check "rendered session" "$(grep -o 'SESSION *[$0-9.]*' <<<"$out" | tr -s ' ')" 'SESSION $92.20'
 
 # Claude Code's own session figure wins over the recomputed one.
 out="$(echo '{"session_id":"s1","cost":{"total_cost_usd":12.5}}' | bash "$SCRIPT")"
-check "uses Claude Code session cost" "$(grep -o 'session [$0-9.]*' <<<"$out")" 'session $12.50'
+check "uses Claude Code session cost" "$(grep -o 'SESSION *[$0-9.]*' <<<"$out" | tr -s ' ')" 'SESSION $12.50'
 
 # Rate limits and context render; missing fields don't break anything.
 out="$(jq -n --argjson t "$(($(date +%s) + 5400))" '{session_id:"s1", context_window:{context_window_size:1000000, used_percentage:85}, rate_limits:{five_hour:{used_percentage:42, resets_at:$t}}}' | bash "$SCRIPT")"
 check "context" "$(grep -o '[0-9]*% [0-9.kM]*/[0-9.kM]*\|[0-9]*%' <<<"$out" | head -1)" '85%'
-check "5h limit" "$(grep -o '5h [0-9]*% ↻[0-9hm]*' <<<"$out")" '5h 42% ↻1h30m'
+check "5h limit" "$(grep -o '42%.*in [0-9hm]*' <<<"$out" | tr -s ' ' | sed 's/resets [0-9:]*/resets T/')" '42% ⇣ 28% resets T in 1h30m'
+
+# Pace: 3.5h into a 5h window is 70% of the time; 90% used is ahead of that,
+# and at this rate the limit is hit before the reset.
+out="$(jq -n --argjson t "$(($(date +%s) + 5400))" '{rate_limits:{five_hour:{used_percentage:90, resets_at:$t}}}' | bash "$SCRIPT")"
+check "over pace" "$(grep -o '⇡ [0-9]*%' <<<"$out")" '⇡ 20%'
+check "projects 100% before reset" "$(grep -c 'full by' <<<"$out")" 1
+
+# Weather renders from sky's cached JSON; sky itself is never run here.
+mkdir -p "$WORK/cache/claude-statusline"
+echo '{"location":{"name":"Stavern, Norway"},"temperature":14.7,"feels_like":11.2,"humidity":82.3,"wind_speed":2.1,"wind_degrees":232,"precipitation":0,"symbol":"clearsky_day"}' \
+  >"$WORK/cache/claude-statusline/weather.json"
+out="$(echo '{}' | CLAUDE_STATUSLINE_WEATHER=1 CLAUDE_STATUSLINE_SKY=/nonexistent bash "$SCRIPT")"
+check "weather" "$(head -1 <<<"$out" | grep -o 'Stavern.*%' | tr -s ' ')" 'Stavern ☀️ 15° feels 11° ↗ 2 m/s 💧 82%'
+out="$(echo '{}' | bash "$SCRIPT")"
+check "weather off" "$(grep -c Stavern <<<"$out")" 0
+# Compact mode: the same data folded into four lines, by flag or by env.
+limits='{"session_id":"s1","rate_limits":{"five_hour":{"used_percentage":42},"seven_day":{"used_percentage":10}}}'
+out="$(echo "$limits" | bash "$SCRIPT" --compact)"
+check "compact is four lines" "$(wc -l <<<"$out" | tr -d ' ')" 4
+check "compact limits share a row" "$(grep -c 'LIMITS .*5h.*7d' <<<"$out")" 1
+check "compact via env" "$(echo "$limits" | CLAUDE_STATUSLINE_COMPACT=1 bash "$SCRIPT" | wc -l | tr -d ' ')" 4
+
 check "empty input" "$(echo '{}' | bash "$SCRIPT" >/dev/null && echo ok)" ok
 
 ((failures == 0)) || {

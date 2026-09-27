@@ -7,10 +7,10 @@ Personal config for zsh, tmux, neovim, ghostty, and a few other tools. [GNU Stow
 ## Install
 
 ```bash
-curl -fsSL https://install.kristoffer.dev/dotfiles | bash
+curl -fsSL https://kristoffer.dev/dotfiles/install | bash
 ```
 
-Until that hostname is live, the same script runs from GitHub:
+Or straight from GitHub:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/install.sh | bash
@@ -19,15 +19,15 @@ curl -fsSL https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/instal
 Look first, change nothing:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/install.sh | bash -s -- --dry-run
+curl -fsSL https://kristoffer.dev/dotfiles/install | bash -s -- --dry-run
 ```
 
 Both commands clone this repo to `~/dotfiles` and run `install.sh`. The script:
 
-1. Installs what the configs need. On macOS: Homebrew (if missing), Stow, lazygit, tmux, and neovim. On Linux: `git`, `stow`, `zsh`, and `tmux` with apt, pacman, or dnf.
+1. Installs what the configs need. On macOS: Homebrew (if missing), Stow, jq, lazygit, tmux, neovim, and [sky](https://github.com/KristofferRisa/sky-cli) (weather for the status line). On Linux: `git`, `stow`, `zsh`, and `tmux` with apt, pacman, or dnf.
 2. Installs Oh My Zsh and Powerlevel10k when they are not already there.
 3. Links `.config` into `~/.config` and `.claude` into `~/.claude`. Anything already in the way is moved to `~/.dotfiles-backup/<timestamp>/`. Nothing is deleted.
-4. Adds `export ZDOTDIR="$HOME/.config/zsh"` to `~/.zshenv`, so zsh reads its config from this repo.
+4. Adds `export ZDOTDIR="$HOME/.config/zsh"` to `~/.zshenv`, so zsh reads its config from this repo, and links `~/.zshrc` to the same file for tools that read `~/.zshrc` directly (Claude Code's shell, nvm and rustup installers). An existing `~/.zshrc` is backed up first.
 
 Open a new terminal when it finishes. Run it again whenever you like; a second run changes nothing.
 
@@ -35,6 +35,7 @@ Open a new terminal when it finishes. Run it again whenever you like; a second r
 | --- | --- |
 | `--dry-run` | Print what would be installed, linked, and moved |
 | `--link-only` | Skip installs, only link (needs git, stow, and zsh already) |
+| `--update` | Pull the latest changes into this checkout first, then install and link |
 
 From a checkout: `./install.sh`. Clone somewhere else with `DOTFILES_DEST=/path/to/dotfiles`.
 
@@ -43,12 +44,10 @@ Not installed for you: Ghostty (`brew install --cask ghostty`), and neovim on Li
 ## Update
 
 ```bash
-cd ~/dotfiles
-git pull
-./install.sh
+cd ~/dotfiles && ./install.sh --update
 ```
 
-Or re-run the one-liner, which does both.
+Same as `git pull && ./install.sh`, or re-run the one-liner, which does both.
 
 ## What's included
 
@@ -58,7 +57,6 @@ Or re-run the one-liner, which does both.
 ├── git/         # Global git config, SSH commit signing
 ├── lazygit/     # lazygit: Nerd Font v3 icons
 ├── nvim/        # LazyVim with .NET, Go, Vue, Tailwind, DAP and Claude Code extras
-├── opencode/    # OpenCode agents
 ├── tmux/        # Ctrl+a prefix, vim-style panes
 └── zsh/         # Oh My Zsh + Powerlevel10k, aliases, completions
 .claude/
@@ -87,6 +85,8 @@ Zsh aliases:
 | `dstart` | `docker compose up -d`, then tail the logs |
 | `tmx NAME` | Attach to a tmux session, or offer to create it |
 
+`.zshrc` sets `CLAUDE_CODE_ENABLE_TELEMETRY=1`. The OpenTelemetry exporter and endpoint are per machine, so set them in `.zshrc.local`.
+
 Machine-specific settings (proxies, tokens, extra `PATH` entries) go in `~/.config/zsh/.zshrc.local`. It is sourced if present and ignored by git.
 
 Tmux, prefix `Ctrl+a`:
@@ -102,17 +102,69 @@ Tmux, prefix `Ctrl+a`:
 
 ## Claude Code status line
 
-`.claude/statusline/` is a status line written in bash and `jq`. It needs no Node or npm package, and it takes about 40 ms per refresh.
+`.claude/statusline/` is a status line written in bash and `jq`. It needs no Node or npm package, and it takes about 50 ms per refresh.
 
 ```
- dotfiles   main ●1   Opus 5.5 · xhigh   ▰▰▱▱▱▱▱▱ 26% 256k/1M
- session $6.84 · 112k out · +412/-87 · 1h30m │ today $7.52 · cache 98% (saved $63.15) │ 5h 42% ↻1h19m │ 7d 73% ↻3d11h
+╭─  Stavern   🌤️ 15°  ↗ 2 m/s  💧 82%   ·   Sun 27 Sep  11:52   ·   CC 2.1.283  ──────────
+│
+│  PROJECT     dotfiles   main ●2  Opus 5.5 · xhigh
+│  CONTEXT   ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱   26%   256k of 1M
+│
+│  5 HOUR    ▰▰▰▰▰▰▰┃▰▰▰▱▱▱▱▱▱▱▱▱▱   48%   ⇡ 11%     resets 15:02      in 3h10m    ⚠ full by 13:52
+│  7 DAY     ▰▰▰▰▱▱▱▱▱▱┃▱▱▱▱▱▱▱▱▱▱   20%   ⇣ 31%     resets Wed 22:59  in 3d11h
+│
+│  SESSION   $6.84     $4.56/h     61.8k out    +412 −87    1h30m
+╰─ TODAY     $16.82    cache 98%   saved $143
 ```
 
-- **session**: Claude Code's own cost figure, fresh output tokens, lines changed, and time
+It is a panel: a header, then labelled rows in aligned columns, grouped into sections. The right edge stays open because Claude Code doesn't pass the terminal width. Sections with nothing to show are left out.
+
+For a shorter panel, add `--compact` to the command in `.claude/settings.json` (or set `CLAUDE_STATUSLINE_COMPACT=1`). Context moves onto the project row, both limits share a row, and session and today share one:
+
+```
+╭─  Stavern   🌤️ 15°  ↗ 2 m/s   ·   Sun 27 Sep  11:54   ·   CC 2.1.283
+│  PROJECT     dotfiles   main ●3  Opus 5.5 · xhigh    ▰▰▰▱▱▱▱▱▱▱ 26%
+│  LIMITS    5h ▰▰▰▰┃▰▱▱▱▱▱ 48% ⇡11% ↻15:02 ⚠13:56   ·   7d ▰▰▱▱▱┃▱▱▱▱▱ 20% ⇣31% ↻Wed 22:59
+╰─ COST      $6.84 session   ·   $4.56/h   ·   $17.24 today   ·   cache 98%
+```
+
+`↻` is the reset time and `⚠` the time the limit runs out at the current pace.
+
+Pick the layout in `.claude/settings.json`. The full panel is the default:
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "bash ~/.claude/statusline/statusline.sh --compact",
+  "padding": 0
+}
+```
+
+Other settings are environment variables, set in `~/.config/zsh/.zshrc.local` or in the command itself:
+
+```bash
+CLAUDE_STATUSLINE_COMPACT=1        # same as --compact
+CLAUDE_STATUSLINE_LOCATION=oslo    # a location saved with `sky locations add`
+CLAUDE_STATUSLINE_WEATHER=0        # no weather, and sky is never called
+CLAUDE_STATUSLINE_DEBUG=1          # save Claude Code's raw input to ~/.cache/claude-statusline/last-input.json
+```
+
+Try it without Claude Code by piping in a sample:
+
+```bash
+echo '{"model":{"display_name":"Opus 5.5"},"context_window":{"context_window_size":1000000,"used_percentage":26},"rate_limits":{"five_hour":{"used_percentage":48,"resets_at":'"$(($(date +%s) + 11400))"'}}}' \
+  | bash ~/.claude/statusline/statusline.sh
+```
+
+- **header**: weather from [sky](https://github.com/KristofferRisa/sky-cli) (MET Norway) for sky's default location, the date and time, and the Claude Code version. Weather is fetched in the background at most every 10 minutes and hidden when sky is missing or the last fetch is over two hours old
+- **git**: `●` uncommitted files, `⇡`/`⇣` commits not yet pushed or pulled
+- **context**: a gauge that shifts from green to red as it fills
+- **5h / 7d**: subscription rate limits, when Claude Code reports them. `┃` marks where usage would be if spread evenly over the window; `⇡` is how far ahead of that you are, `⇣` how much headroom. Then the clock time it resets, the countdown, and, if you're on track to hit 100% first, when
+- **session**: Claude Code's own cost figure, cost per hour, fresh output tokens, lines changed, and time
 - **today**: every transcript since local midnight (subagents included), priced from `pricing.json`. A `~` means a model had no known price
 - **cache**: share of input served from cache, and what that saved against full input price
-- **5h / 7d**: subscription rate limits and when they reset, when Claude Code reports them
+
+The installer adds sky on macOS; elsewhere, `brew install kristofferrisa/sky/sky` or a [release binary](https://github.com/KristofferRisa/sky-cli/releases). `CLAUDE_STATUSLINE_LOCATION=oslo` picks a saved sky location; `CLAUDE_STATUSLINE_WEATHER=0` turns weather off.
 
 `bash ~/.claude/statusline/statusline.sh --report` prints today's cost by model.
 
@@ -166,7 +218,11 @@ stow -D -t ~/.claude .claude
 
 ## Installer URL
 
-`https://install.kristoffer.dev/dotfiles` should redirect to this repo's `install.sh`. `curl -fsSL` follows redirects, so a 302 to the raw GitHub file is enough:
+The short address is `https://kristoffer.dev/dotfiles/install`. It is a small shim served by the [kristoffer.dev](https://github.com/KristofferRisa/kristoffer.dev) site (`static/dotfiles/install`) that fetches this repo's `install.sh` and runs it with the same arguments — no DNS or redirect rule to keep working, since it deploys with the rest of that site.
+
+`install.kristoffer.dev/dotfiles` was a Cloudflare redirect rule to the raw GitHub file. It is not part of either repo and has been unreliable, so the site address above is what's documented now. The old `kristoffer.dev/dotfiles/install.sh` (with the extension) still works too, for links made before this change.
+
+Either way, `curl -fsSL` prints the real script first, straight from GitHub:
 
 `https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/install.sh`
 
