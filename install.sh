@@ -14,8 +14,9 @@ REPO_URL="${DOTFILES_REPO:-https://github.com/KristofferRisa/dotfiles.git}"
 DEST="${DOTFILES_DEST:-$HOME/dotfiles}"
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 
-# Stow is required. The rest are the tools this repo configures.
-BREW_PACKAGES=(stow jq lazygit tmux neovim)
+# Stow is required. The rest are the tools this repo configures. sky gives
+# the Claude Code status line its weather; the full name taps it on install.
+BREW_PACKAGES=(stow jq lazygit tmux neovim kristofferrisa/sky/sky)
 # Distro neovim is usually older than LazyVim supports, so Linux skips it.
 LINUX_PACKAGES=(git stow zsh tmux jq)
 

@@ -24,7 +24,7 @@ curl -fsSL https://kristoffer.dev/dotfiles/install | bash -s -- --dry-run
 
 Both commands clone this repo to `~/dotfiles` and run `install.sh`. The script:
 
-1. Installs what the configs need. On macOS: Homebrew (if missing), Stow, lazygit, tmux, and neovim. On Linux: `git`, `stow`, `zsh`, and `tmux` with apt, pacman, or dnf.
+1. Installs what the configs need. On macOS: Homebrew (if missing), Stow, jq, lazygit, tmux, neovim, and [sky](https://github.com/KristofferRisa/sky-cli) (weather for the status line). On Linux: `git`, `stow`, `zsh`, and `tmux` with apt, pacman, or dnf.
 2. Installs Oh My Zsh and Powerlevel10k when they are not already there.
 3. Links `.config` into `~/.config` and `.claude` into `~/.claude`. Anything already in the way is moved to `~/.dotfiles-backup/<timestamp>/`. Nothing is deleted.
 4. Adds `export ZDOTDIR="$HOME/.config/zsh"` to `~/.zshenv`, so zsh reads its config from this repo, and links `~/.zshrc` to the same file for tools that read `~/.zshrc` directly (Claude Code's shell, nvm and rustup installers). An existing `~/.zshrc` is backed up first.
@@ -119,7 +119,7 @@ Tmux, prefix `Ctrl+a`:
 - **today**: every transcript since local midnight (subagents included), priced from `pricing.json`. A `~` means a model had no known price
 - **cache**: share of input served from cache, and what that saved against full input price
 
-Weather needs `brew install kristofferrisa/sky/sky`. `CLAUDE_STATUSLINE_LOCATION=oslo` picks a saved sky location; `CLAUDE_STATUSLINE_WEATHER=0` turns weather off.
+The installer adds sky on macOS; elsewhere, `brew install kristofferrisa/sky/sky` or a [release binary](https://github.com/KristofferRisa/sky-cli/releases). `CLAUDE_STATUSLINE_LOCATION=oslo` picks a saved sky location; `CLAUDE_STATUSLINE_WEATHER=0` turns weather off.
 
 `bash ~/.claude/statusline/statusline.sh --report` prints today's cost by model.
 
