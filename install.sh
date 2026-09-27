@@ -1,9 +1,9 @@
 #!/bin/bash
 # Install dotfiles.
 #
-#   curl -fsSL https://install.kristoffer.dev/dotfiles | bash
-#   curl -fsSL https://install.kristoffer.dev/dotfiles | bash -s -- --dry-run
-#   ./install.sh [--dry-run] [--link-only]
+#   curl -fsSL https://kristoffer.dev/dotfiles/install | bash
+#   curl -fsSL https://kristoffer.dev/dotfiles/install | bash -s -- --dry-run
+#   ./install.sh [--dry-run] [--link-only] [--update]
 #
 # A piped shell is still reading this script from stdin, so the first run
 # only clones the repo and re-execs the on-disk copy. The on-disk copy is
@@ -21,15 +21,19 @@ LINUX_PACKAGES=(git stow zsh tmux jq)
 
 DRY_RUN=0
 LINK_ONLY=0
+UPDATE=0
 
 usage() {
   cat <<'EOF'
-Usage: install.sh [--dry-run] [--link-only]
+Usage: install.sh [--dry-run] [--link-only] [--update]
 
 Installs what this repo's configs need, then links them with GNU Stow.
 
   --dry-run     Show what would be installed, linked, and moved. Change nothing.
   --link-only   Skip package, Oh My Zsh, and Powerlevel10k installs. Only link.
+  --update      Pull the latest changes into this checkout first, then install
+                and link as usual. Run this from ~/dotfiles instead of a manual
+                `git pull && ./install.sh`.
   -h, --help    Show this help.
 
 Files that block a link are moved to ~/.dotfiles-backup/<timestamp>/.
@@ -64,6 +68,7 @@ parse_args() {
     case "$1" in
       --dry-run) DRY_RUN=1 ;;
       --link-only) LINK_ONLY=1 ;;
+      --update) UPDATE=1 ;;
       -h | --help)
         usage
         exit 0
@@ -349,6 +354,30 @@ bootstrap() {
   exec bash "$dest/install.sh" "$@" </dev/null
 }
 
+# `--update` from a checkout is `git pull && ./install.sh` in one step. Re-exec
+# afterward for the same reason bootstrap() does: this file may have just
+# changed underneath the running interpreter, and a fresh process reading it
+# off disk avoids acting on a half-old, half-new copy.
+update_checkout() {
+  [[ -d "$DOTFILES_DIR/.git" ]] || die "$DOTFILES_DIR is not a git checkout, so --update has nothing to pull."
+
+  if ((DRY_RUN)); then
+    log "  would run: git -C $DOTFILES_DIR pull --ff-only"
+    return 0
+  fi
+
+  log "Updating $DOTFILES_DIR"
+  git -C "$DOTFILES_DIR" pull --ff-only
+
+  # Bash 3.2 (macOS's system bash) treats "${arr[@]}" as unbound under -u when
+  # arr is empty, so only splice it in when --link-only actually set it.
+  if ((LINK_ONLY)); then
+    exec bash "$DOTFILES_DIR/install.sh" --link-only
+  else
+    exec bash "$DOTFILES_DIR/install.sh"
+  fi
+}
+
 main() {
   parse_args "$@"
 
@@ -358,6 +387,8 @@ main() {
 
   DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   ((DRY_RUN)) && log "Dry run: nothing will be changed."
+
+  ((UPDATE)) && update_checkout
 
   if ((LINK_ONLY)); then
     require_tools
