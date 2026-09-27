@@ -14,6 +14,13 @@
 #   │  SESSION   $6.84     $4.56/h     42.4k out    +412 −87    1h30m
 #   ╰─ TODAY     $15.88    cache 98%   saved $135
 #
+# $compact == "1" (statusline.sh --compact) folds it into four lines:
+#
+#   ╭─  Stavern  🌤️ 15°  ↗ 2 m/s   ·   Sun 27 Sep  11:52   ·   CC 2.1.283
+#   │  PROJECT    dotfiles   main ●2  Opus 5.5 · xhigh   ▰▰▰▱▱▱▱▱▱▱ 26%
+#   │  LIMITS   5h ▰▰▰▰┃▰▱▱▱▱▱ 48% ⇡11% ↻15:02 ⚠13:52  ·  7d ▰▰┃▱▱▱▱▱▱▱▱ 20% ⇣31% ↻Wed 22:59
+#   ╰─ COST     $6.84 session  ·  $4.56/h  ·  $16.82 today  ·  cache 98%
+#
 # The right edge stays open: Claude Code does not pass the terminal width,
 # so a closed box would break on any other size. A section with nothing to
 # show is left out (no rate limits on API keys, no weather without sky).
@@ -149,6 +156,27 @@ def limit($label; $window; $now):
            | if $full < $reset then fg(C.red) + bold + "⚠ full by \($full | clock($now))" + reset else "" end
          else "" end));
 
+# The same window squeezed into one cell of the compact LIMITS row.
+def limit_short($label; $window; $now):
+  . as $l
+  | ($l.used_percentage // 0) as $used
+  | ($l.resets_at // null) as $reset
+  | (if $reset != null then (1 - (($reset - $now) / $window)) | clamp(0; 1) else null end) as $elapsed
+  | dim($label + " ")
+    + (if $elapsed != null then pace_bar($used; $elapsed * 100; 10) else gauge($used; 10) end)
+    + " " + fg($used | level(70; 90)) + bold + "\($used | round)%" + reset
+    + (if $elapsed != null then
+         ($used - $elapsed * 100) as $d
+         | if $d >= 5 then fg(C.red) + " ⇡\($d | round)%" + reset
+           elif $d <= -5 then fg(C.green) + " ⇣\(-$d | round)%" + reset
+           else "" end
+       else "" end)
+    + (if $reset != null then dim(" ↻") + fg(C.text) + ($reset | clock($now)) + reset else "" end)
+    + (if $elapsed != null and $elapsed > 0.02 and $used >= 1 and $used < 100 then
+         ($now + (100 - $used) / ($used / ($elapsed * $window))) as $full
+         | if $full < $reset then fg(C.red) + bold + " ⚠\($full | clock($now))" + reset else "" end
+       else "" end);
+
 ($usage[0] // {}) as $u
 | ($weather[0] // null) as $w
 | now as $now
@@ -164,7 +192,8 @@ def limit($label; $window; $now):
        + (if $w.wind_speed != null then
             fg(C.teal) + "  \(($w.wind_degrees // 0) | wind_arrow) \($w.wind_speed | round) m/s" + reset
           else "" end)
-       + (if ($w.precipitation // 0) > 0 then fg(C.sky) + "  ☔ \($w.precipitation) mm" + reset
+       + (if $compact == "1" then ""
+          elif ($w.precipitation // 0) > 0 then fg(C.sky) + "  ☔ \($w.precipitation) mm" + reset
           elif $w.humidity != null then fg(C.sky) + "  💧 \($w.humidity | round)%" + reset
           else "" end)
      else empty end),
@@ -197,8 +226,11 @@ def limit($label; $window; $now):
        text: "\(.model.display_name // .model.id // "Claude")\(if .effort.level then " · \(.effort.level)" else "" end)"},
       (if .agent.name then {bg: C.mauve, fg: C.base, text: "󰚩 \(.agent.name)"} else empty end),
       (if .worktree.name then {bg: C.teal, fg: C.base, text: " \(.worktree.name)"} else empty end)
-    ] | join_segments),
-    (if $ctx_pct != null then
+    ] | join_segments
+      + (if $compact == "1" and $ctx_pct != null then
+           "   " + gauge($ctx_pct; 10) + " " + fg($ctx_pct | level(60; 80)) + bold + "\($ctx_pct | round)%" + reset
+         else "" end)),
+    (if $ctx_pct != null and $compact != "1" then
        row("CONTEXT"; C.mauve;
          gauge($ctx_pct; 24) + "   " + bold + ("\($ctx_pct | round)%" | col(6; $ctx_pct | level(60; 80)))
          + (if $ctx_tokens != null and $size != null
@@ -208,10 +240,17 @@ def limit($label; $window; $now):
   ] as $workspace
 
 # ---- limits: subscription windows, pace, and when they reset ----
-| [
+| . as $in
+| ([
     (.rate_limits.five_hour // empty | limit("5 HOUR"; 18000; $now)),
     (.rate_limits.seven_day // empty | limit("7 DAY"; 604800; $now))
-  ] as $limits
+  ]
+  | if $compact == "1" and length > 0 then
+      [row("LIMITS"; C.pink; [
+        ($in.rate_limits.five_hour // empty | limit_short("5h"; 18000; $now)),
+        ($in.rate_limits.seven_day // empty | limit_short("7d"; 604800; $now))
+      ] | join(dot))]
+    else . end) as $limits
 
 # ---- money: what it costs ----
 | (.cost // {}) as $cost
@@ -219,7 +258,7 @@ def limit($label; $window; $now):
 | ($u.today // {}) as $t
 | ($cost.total_cost_usd // $s.cost // 0) as $session_usd
 | (($t.input // 0) + ($t.cache_read // 0) + ($t.cache_write // 0)) as $t_in
-| [
+| ([
     # Session: Claude Code's own cost figure; tokens are fresh output, not
     # cache re-reads (which dominate any "total tokens" count). Burn rate
     # only once there is enough session to average over.
@@ -241,15 +280,26 @@ def limit($label; $window; $now):
          + (if $t_in > 0 then ("cache \((($t.cache_read // 0) / $t_in * 100) | floor)%" | col(12; C.teal)) else " " * 12 end)
          + (if ($t.saved // 0) >= 0.01 then dim("saved ") + ($t.saved | usd | col(0; C.green)) else "" end))
      else empty end)
-  ] as $money
+  ]
+  | if $compact == "1" then
+      [row("COST"; C.yellow;
+        [ fg(C.text) + bold + ($session_usd | usd) + reset + dim(" session"),
+          (if ($cost.total_duration_ms // 0) >= 300000 and $session_usd > 0
+           then fg(C.yellow) + "\($session_usd / ($cost.total_duration_ms / 3600000) | usd)/h" + reset else empty end),
+          (if ($t.responses // 0) > 0 then
+             fg(C.peach) + bold + (if ($t.unpriced // 0) > 0 then "~" else "" end) + ($t.cost | usd) + reset + dim(" today")
+           else empty end),
+          (if $t_in > 0 then fg(C.teal) + "cache \((($t.cache_read // 0) / $t_in * 100) | floor)%" + reset else empty end)
+        ] | join(dot))]
+    else . end) as $money
 
 # ---- the panel ----
 | [$workspace, $limits, $money] | map(select(length > 0)) as $sections
-| ([$sections | to_entries[] | (if .key > 0 then {spacer: true} else empty end), .value[]]) as $rows
+| ([$sections | to_entries[] | (if .key > 0 and $compact != "1" then {spacer: true} else empty end), .value[]]) as $rows
 | ($rows | length) as $n
 | fg(C.overlay) as $frame
-| ($frame + "╭─ " + reset + $header + "  " + $frame + ("─" * 10) + reset),
-  (if $n > 0 then $frame + "│" + reset else empty end),
+| ($frame + "╭─ " + reset + $header + (if $compact == "1" then "" else "  " + $frame + ("─" * 10) + reset end)),
+  (if $n > 0 and $compact != "1" then $frame + "│" + reset else empty end),
   ($rows | to_entries[]
    | .value as $r
    | (if .key == $n - 1 then "╰─ " else "│  " end) as $edge

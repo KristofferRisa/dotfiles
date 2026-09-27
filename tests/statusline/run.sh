@@ -81,6 +81,13 @@ out="$(echo '{}' | CLAUDE_STATUSLINE_WEATHER=1 CLAUDE_STATUSLINE_SKY=/nonexisten
 check "weather" "$(head -1 <<<"$out" | grep -o 'Stavern.*%' | tr -s ' ')" 'Stavern ☀️ 15° feels 11° ↗ 2 m/s 💧 82%'
 out="$(echo '{}' | bash "$SCRIPT")"
 check "weather off" "$(grep -c Stavern <<<"$out")" 0
+# Compact mode: the same data folded into four lines, by flag or by env.
+limits='{"session_id":"s1","rate_limits":{"five_hour":{"used_percentage":42},"seven_day":{"used_percentage":10}}}'
+out="$(echo "$limits" | bash "$SCRIPT" --compact)"
+check "compact is four lines" "$(wc -l <<<"$out" | tr -d ' ')" 4
+check "compact limits share a row" "$(grep -c 'LIMITS .*5h.*7d' <<<"$out")" 1
+check "compact via env" "$(echo "$limits" | CLAUDE_STATUSLINE_COMPACT=1 bash "$SCRIPT" | wc -l | tr -d ' ')" 4
+
 check "empty input" "$(echo '{}' | bash "$SCRIPT" >/dev/null && echo ok)" ok
 
 ((failures == 0)) || {
