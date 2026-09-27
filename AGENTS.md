@@ -17,7 +17,7 @@ Personal dotfiles. GNU Stow symlinks `.config` into `~/.config` and `.claude` in
 - Links `.config` and `.claude` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted.
 - Adds `ZDOTDIR` to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`, so `.zshrc` puts Homebrew on `PATH` itself.
 
-Flags: `--dry-run` (change nothing), `--link-only` (skip installs).
+Flags: `--dry-run` (change nothing), `--link-only` (skip installs), `--update` (`git pull --ff-only` first, then install and link).
 
 ### Managing Configurations with Stow
 

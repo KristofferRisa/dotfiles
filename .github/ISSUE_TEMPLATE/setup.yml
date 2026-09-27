@@ -24,9 +24,10 @@ body:
     attributes:
       label: How was it run?
       options:
-        - curl … | bash (install.kristoffer.dev or raw GitHub)
+        - curl … | bash (kristoffer.dev/dotfiles/install or raw GitHub)
         - ./install.sh from a checkout
         - ./install.sh --link-only
+        - ./install.sh --update
     validations:
       required: true
   - type: textarea

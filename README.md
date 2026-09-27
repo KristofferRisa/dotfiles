@@ -7,10 +7,10 @@ Personal config for zsh, tmux, neovim, ghostty, and a few other tools. [GNU Stow
 ## Install
 
 ```bash
-curl -fsSL https://install.kristoffer.dev/dotfiles | bash
+curl -fsSL https://kristoffer.dev/dotfiles/install | bash
 ```
 
-Until that hostname is live, the same script runs from GitHub:
+Or straight from GitHub:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/install.sh | bash
@@ -19,7 +19,7 @@ curl -fsSL https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/instal
 Look first, change nothing:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/install.sh | bash -s -- --dry-run
+curl -fsSL https://kristoffer.dev/dotfiles/install | bash -s -- --dry-run
 ```
 
 Both commands clone this repo to `~/dotfiles` and run `install.sh`. The script:
@@ -35,6 +35,7 @@ Open a new terminal when it finishes. Run it again whenever you like; a second r
 | --- | --- |
 | `--dry-run` | Print what would be installed, linked, and moved |
 | `--link-only` | Skip installs, only link (needs git, stow, and zsh already) |
+| `--update` | Pull the latest changes into this checkout first, then install and link |
 
 From a checkout: `./install.sh`. Clone somewhere else with `DOTFILES_DEST=/path/to/dotfiles`.
 
@@ -43,12 +44,10 @@ Not installed for you: Ghostty (`brew install --cask ghostty`), and neovim on Li
 ## Update
 
 ```bash
-cd ~/dotfiles
-git pull
-./install.sh
+cd ~/dotfiles && ./install.sh --update
 ```
 
-Or re-run the one-liner, which does both.
+Same as `git pull && ./install.sh`, or re-run the one-liner, which does both.
 
 ## What's included
 
@@ -166,7 +165,11 @@ stow -D -t ~/.claude .claude
 
 ## Installer URL
 
-`https://install.kristoffer.dev/dotfiles` should redirect to this repo's `install.sh`. `curl -fsSL` follows redirects, so a 302 to the raw GitHub file is enough:
+The short address is `https://kristoffer.dev/dotfiles/install`. It is a small shim served by the [kristoffer.dev](https://github.com/KristofferRisa/kristoffer.dev) site (`static/dotfiles/install`) that fetches this repo's `install.sh` and runs it with the same arguments — no DNS or redirect rule to keep working, since it deploys with the rest of that site.
+
+`install.kristoffer.dev/dotfiles` was a Cloudflare redirect rule to the raw GitHub file. It is not part of either repo and has been unreliable, so the site address above is what's documented now. The old `kristoffer.dev/dotfiles/install.sh` (with the extension) still works too, for links made before this change.
+
+Either way, `curl -fsSL` prints the real script first, straight from GitHub:
 
 `https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/install.sh`
 
