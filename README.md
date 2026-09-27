@@ -102,17 +102,24 @@ Tmux, prefix `Ctrl+a`:
 
 ## Claude Code status line
 
-`.claude/statusline/` is a status line written in bash and `jq`. It needs no Node or npm package, and it takes about 40 ms per refresh.
+`.claude/statusline/` is a status line written in bash and `jq`. It needs no Node or npm package, and it takes about 80 ms per refresh.
 
 ```
- dotfiles   main ●1   Opus 5.5 · xhigh   ▰▰▱▱▱▱▱▱ 26% 256k/1M
- session $6.84 · 112k out · +412/-87 · 1h30m │ today $7.52 · cache 98% (saved $63.15) │ 5h 42% ↻1h19m │ 7d 73% ↻3d11h
+  Stavern  🌤️ 15° ↗2 m/s 💧82% │ Sun 27 Sep 11:23 │ CC 2.1.283
+   dotfiles   main ●3 ⇡2  Opus 5.5 · xhigh  ▰▰▰▱▱▱▱▱▱▱▱▱ 26% 256k/1M
+ 5h ▰▰▰▰┃▰▱▱▱▱▱ 48% ⇡11% · resets 14:33 (3h10m) · 100% at 13:22 │ 7d ▰▰▱▱▱┃▱▱▱▱▱ 20% ⇣31% · resets Wed 22:29 (3d11h)
+ session $6.84 · $4.56/h · 42.4k out · +412/-87 · 1h30m │ today $15.88 · cache 98% (saved $135)
 ```
 
-- **session**: Claude Code's own cost figure, fresh output tokens, lines changed, and time
+- **header**: weather from [sky](https://github.com/KristofferRisa/sky-cli) (MET Norway) for sky's default location, the date and time, and the Claude Code version. Weather is fetched in the background at most every 10 minutes and hidden when sky is missing or the last fetch is over two hours old
+- **git**: `●` uncommitted files, `⇡`/`⇣` commits not yet pushed or pulled
+- **context**: a gauge that shifts from green to red as it fills
+- **5h / 7d**: subscription rate limits, when Claude Code reports them. `┃` marks where usage would be if spread evenly over the window; `⇡` is how far ahead of that you are, `⇣` how much headroom. Then the clock time it resets, the countdown, and, if you're on track to hit 100% first, when
+- **session**: Claude Code's own cost figure, cost per hour, fresh output tokens, lines changed, and time
 - **today**: every transcript since local midnight (subagents included), priced from `pricing.json`. A `~` means a model had no known price
 - **cache**: share of input served from cache, and what that saved against full input price
-- **5h / 7d**: subscription rate limits and when they reset, when Claude Code reports them
+
+Weather needs `brew install kristofferrisa/sky/sky`. `CLAUDE_STATUSLINE_LOCATION=oslo` picks a saved sky location; `CLAUDE_STATUSLINE_WEATHER=0` turns weather off.
 
 `bash ~/.claude/statusline/statusline.sh --report` prints today's cost by model.
 
