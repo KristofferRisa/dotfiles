@@ -130,6 +130,32 @@ For a shorter panel, add `--compact` to the command in `.claude/settings.json` (
 
 `↻` is the reset time and `⚠` the time the limit runs out at the current pace.
 
+Pick the layout in `.claude/settings.json`. The full panel is the default:
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "bash ~/.claude/statusline/statusline.sh --compact",
+  "padding": 0
+}
+```
+
+Other settings are environment variables, set in `~/.config/zsh/.zshrc.local` or in the command itself:
+
+```bash
+CLAUDE_STATUSLINE_COMPACT=1        # same as --compact
+CLAUDE_STATUSLINE_LOCATION=oslo    # a location saved with `sky locations add`
+CLAUDE_STATUSLINE_WEATHER=0        # no weather, and sky is never called
+CLAUDE_STATUSLINE_DEBUG=1          # save Claude Code's raw input to ~/.cache/claude-statusline/last-input.json
+```
+
+Try it without Claude Code by piping in a sample:
+
+```bash
+echo '{"model":{"display_name":"Opus 5.5"},"context_window":{"context_window_size":1000000,"used_percentage":26},"rate_limits":{"five_hour":{"used_percentage":48,"resets_at":'"$(($(date +%s) + 11400))"'}}}' \
+  | bash ~/.claude/statusline/statusline.sh
+```
+
 - **header**: weather from [sky](https://github.com/KristofferRisa/sky-cli) (MET Norway) for sky's default location, the date and time, and the Claude Code version. Weather is fetched in the background at most every 10 minutes and hidden when sky is missing or the last fetch is over two hours old
 - **git**: `●` uncommitted files, `⇡`/`⇣` commits not yet pushed or pulled
 - **context**: a gauge that shifts from green to red as it fills
