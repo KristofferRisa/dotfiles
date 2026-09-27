@@ -16,6 +16,7 @@ Personal dotfiles. GNU Stow symlinks `.config` into `~/.config` and `.claude` in
 - Installs Oh My Zsh (to `~/.oh-my-zsh`) and Powerlevel10k when missing. The Oh My Zsh installer must be called with `ZDOTDIR` empty and `--keep-zshrc`, or it overwrites the symlinked `.zshrc`.
 - Links `.config` and `.claude` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted.
 - Adds `ZDOTDIR` to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`, so `.zshrc` puts Homebrew on `PATH` itself.
+- Links `~/.zshrc` to `~/.config/zsh/.zshrc` (backing up whatever was there). zsh never reads it while `ZDOTDIR` is set, but Claude Code's shell snapshot and tool installers (nvm, rustup, grok) hardcode `~/.zshrc`; a stale copy there gives them a different shell than the terminal. Lines those installers append land in the repo `.zshrc`, so they show up in `git status`.
 
 Flags: `--dry-run` (change nothing), `--link-only` (skip installs), `--update` (`git pull --ff-only` first, then install and link).
 

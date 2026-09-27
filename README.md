@@ -27,7 +27,7 @@ Both commands clone this repo to `~/dotfiles` and run `install.sh`. The script:
 1. Installs what the configs need. On macOS: Homebrew (if missing), Stow, lazygit, tmux, and neovim. On Linux: `git`, `stow`, `zsh`, and `tmux` with apt, pacman, or dnf.
 2. Installs Oh My Zsh and Powerlevel10k when they are not already there.
 3. Links `.config` into `~/.config` and `.claude` into `~/.claude`. Anything already in the way is moved to `~/.dotfiles-backup/<timestamp>/`. Nothing is deleted.
-4. Adds `export ZDOTDIR="$HOME/.config/zsh"` to `~/.zshenv`, so zsh reads its config from this repo.
+4. Adds `export ZDOTDIR="$HOME/.config/zsh"` to `~/.zshenv`, so zsh reads its config from this repo, and links `~/.zshrc` to the same file for tools that read `~/.zshrc` directly (Claude Code's shell, nvm and rustup installers). An existing `~/.zshrc` is backed up first.
 
 Open a new terminal when it finishes. Run it again whenever you like; a second run changes nothing.
 
