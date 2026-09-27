@@ -92,3 +92,11 @@ export GPG_TTY=$TTY
 export PATH=~/.opencode/bin:$PATH
 export PATH="$HOME/dotfiles/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
+
+
+# >>> grok installer >>>
+export PATH="$HOME/.grok/bin:$PATH"
+export PATH="$HOME/go/bin:$PATH"
+fpath=(~/.grok/completions/zsh $fpath)
+autoload -Uz compinit && compinit -C
+# <<< grok installer <<<
