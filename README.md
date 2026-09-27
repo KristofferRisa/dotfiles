@@ -86,6 +86,8 @@ Zsh aliases:
 | `dstart` | `docker compose up -d`, then tail the logs |
 | `tmx NAME` | Attach to a tmux session, or offer to create it |
 
+`.zshrc` sets `CLAUDE_CODE_ENABLE_TELEMETRY=1`. The OpenTelemetry exporter and endpoint are per machine, so set them in `.zshrc.local`.
+
 Machine-specific settings (proxies, tokens, extra `PATH` entries) go in `~/.config/zsh/.zshrc.local`. It is sourced if present and ignored by git.
 
 Tmux, prefix `Ctrl+a`:
