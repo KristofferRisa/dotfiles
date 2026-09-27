@@ -12,7 +12,7 @@ Personal dotfiles. GNU Stow symlinks `.config` into `~/.config` and `.claude` in
 
 `install.sh` is the only setup entry point. Piped (`curl | bash`), it clones this repo to `~/dotfiles` and re-runs the on-disk script. From a checkout, it:
 
-- Installs dependencies. macOS: Homebrew if needed, then `BREW_PACKAGES` (stow, lazygit, tmux, neovim). Linux: `LINUX_PACKAGES` (git, stow, zsh, tmux) via apt, pacman, or dnf.
+- Installs dependencies. macOS: Homebrew if needed, then `BREW_PACKAGES` (stow, jq, lazygit, tmux, neovim, sky). Linux: `LINUX_PACKAGES` (git, stow, zsh, tmux) via apt, pacman, or dnf.
 - Installs Oh My Zsh (to `~/.oh-my-zsh`) and Powerlevel10k when missing. The Oh My Zsh installer must be called with `ZDOTDIR` empty and `--keep-zshrc`, or it overwrites the symlinked `.zshrc`.
 - Links `.config` and `.claude` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted.
 - Adds `ZDOTDIR` to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`, so `.zshrc` puts Homebrew on `PATH` itself.
@@ -79,7 +79,7 @@ tests/statusline/      # Fixture tests for the status line cost math
 ### Claude Code status line (`.claude/statusline/`)
 
 - `statusline.sh` reads Claude Code's JSON on stdin and prints up to four lines: location, weather, time, and Claude Code version; folder, git, model and effort, and a context gauge; 5h/7d rate limits with a pace marker, reset time, and projected time to 100%; session and today's cost, burn rate, and cache hit rate
-- Weather comes from the `sky` CLI (`kristofferrisa/sky/sky`). It is optional, fetched in the background into `~/.cache/claude-statusline/weather.json` at most every 10 minutes, and never blocks a render. Tests set `CLAUDE_STATUSLINE_WEATHER=0` so they never touch the network
+- Weather comes from the `sky` CLI (`kristofferrisa/sky/sky`, in `BREW_PACKAGES`). It is optional at runtime, fetched in the background into `~/.cache/claude-statusline/weather.json` at most every 10 minutes, and never blocks a render. Tests set `CLAUDE_STATUSLINE_WEATHER=0` so they never touch the network
 - `usage.jq` sums every transcript under `~/.claude/projects` (subagent files too). It counts each API response once (`message.id` + `requestId`) and prices 5-minute and 1-hour cache writes and fast mode separately
 - `pricing.json` is the only place prices live. A model is priced by the longest key it starts with. An unknown model shows `~` and "unknown price"; never guess a price. Update it when a model launches, from Anthropic's pricing docs
 - `render.jq` draws the output (Catppuccin Mocha colours; honours `NO_COLOR`)
