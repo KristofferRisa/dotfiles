@@ -4,6 +4,8 @@
 #   settings.json: "statusLine": {"type": "command", "command": "bash ~/.claude/statusline/statusline.sh"}
 #
 #   statusline.sh --report         today's usage by model, as a table
+#   statusline.sh --compact        four lines instead of the full panel
+#                                  (or CLAUDE_STATUSLINE_COMPACT=1)
 #   CLAUDE_STATUSLINE_DEBUG=1      also save the raw input to $CACHE_DIR/last-input.json
 #   CLAUDE_STATUSLINE_WEATHER=0    hide the weather
 #   CLAUDE_STATUSLINE_LOCATION=x   sky location name (default: sky's default location)
@@ -126,12 +128,13 @@ main() {
     fi
   fi
 
-  local color=1
+  local color=1 compact="${CLAUDE_STATUSLINE_COMPACT:-0}"
   [[ -n "${NO_COLOR:-}" ]] && color=0
+  [[ "${1:-}" == "--compact" ]] && compact=1
 
   jq -r --slurpfile usage "$usage_file" --slurpfile weather "$weather_file" \
     --arg branch "$branch" --arg dirty "$dirty" --arg ahead "$ahead" --arg behind "$behind" \
-    --arg color "$color" -f "$HERE/render.jq" <<<"$input"
+    --arg color "$color" --arg compact "$compact" -f "$HERE/render.jq" <<<"$input"
 }
 
 main "$@"

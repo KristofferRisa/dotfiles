@@ -119,6 +119,17 @@ Tmux, prefix `Ctrl+a`:
 
 It is a panel: a header, then labelled rows in aligned columns, grouped into sections. The right edge stays open because Claude Code doesn't pass the terminal width. Sections with nothing to show are left out.
 
+For a shorter panel, add `--compact` to the command in `.claude/settings.json` (or set `CLAUDE_STATUSLINE_COMPACT=1`). Context moves onto the project row, both limits share a row, and session and today share one:
+
+```
+╭─  Stavern   🌤️ 15°  ↗ 2 m/s   ·   Sun 27 Sep  11:54   ·   CC 2.1.283
+│  PROJECT     dotfiles   main ●3  Opus 5.5 · xhigh    ▰▰▰▱▱▱▱▱▱▱ 26%
+│  LIMITS    5h ▰▰▰▰┃▰▱▱▱▱▱ 48% ⇡11% ↻15:02 ⚠13:56   ·   7d ▰▰▱▱▱┃▱▱▱▱▱ 20% ⇣31% ↻Wed 22:59
+╰─ COST      $6.84 session   ·   $4.56/h   ·   $17.24 today   ·   cache 98%
+```
+
+`↻` is the reset time and `⚠` the time the limit runs out at the current pace.
+
 - **header**: weather from [sky](https://github.com/KristofferRisa/sky-cli) (MET Norway) for sky's default location, the date and time, and the Claude Code version. Weather is fetched in the background at most every 10 minutes and hidden when sky is missing or the last fetch is over two hours old
 - **git**: `●` uncommitted files, `⇡`/`⇣` commits not yet pushed or pulled
 - **context**: a gauge that shifts from green to red as it fills
