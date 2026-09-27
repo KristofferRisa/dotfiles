@@ -207,8 +207,8 @@ install_shell_framework() {
   fi
 
   # The template lands on ~/.zshrc only when the user did not already have one.
-  # ZDOTDIR points zsh at this repo, so that template would shadow nothing and
-  # just confuse the next login.
+  # link_home_zshrc replaces ~/.zshrc anyway; dropping the untouched template
+  # here keeps it out of the backup folder.
   if [[ "$had_zshrc" -eq 0 && -f "$HOME/.zshrc" && ! -L "$HOME/.zshrc" ]]; then
     rm -f "$HOME/.zshrc"
   fi
@@ -283,6 +283,26 @@ stow_package() {
   run stow -R -t "$target" -d "$DOTFILES_DIR" "$package"
 }
 
+# zsh itself reads $ZDOTDIR/.zshrc, but plenty of tools hardcode ~/.zshrc:
+# Claude Code's shell snapshot sources it, and installers (nvm, rustup,
+# grok) append to it. A stale ~/.zshrc means those tools see a different
+# shell than the terminal does, so point it at the same file.
+link_home_zshrc() {
+  local link="$HOME/.zshrc"
+  local want="$HOME/.config/zsh/.zshrc"
+
+  if [[ -L "$link" && "$(readlink "$link")" == "$want" ]]; then
+    log "$link already links to $want"
+    return 0
+  fi
+
+  if [[ -e "$link" || -L "$link" ]]; then
+    back_up_conflicts "$HOME" ".zshrc"
+  fi
+  run ln -s "$want" "$link"
+  ((DRY_RUN)) || log "Linked $link -> $want"
+}
+
 # ~/.zshenv is read before ZDOTDIR takes effect. .zshrc puts Homebrew on
 # PATH itself, so ZDOTDIR is all this file needs.
 setup_zshenv() {
@@ -291,7 +311,9 @@ setup_zshenv() {
   # shellcheck disable=SC2016
   local line='export ZDOTDIR="$HOME/.config/zsh"'
 
-  if [[ -f "$zshenv" ]] && grep -q 'ZDOTDIR' "$zshenv"; then
+  # Match the exact line: a comment or a ZDOTDIR pointing elsewhere must not
+  # count. Appending wins over an earlier export without deleting anything.
+  if [[ -f "$zshenv" ]] && grep -qxF "$line" "$zshenv"; then
     log "ZDOTDIR already set in $zshenv"
   elif ((DRY_RUN)); then
     log "  would add to $zshenv: $line"
@@ -404,6 +426,7 @@ main() {
     stow_package .config "$HOME/.config"
     stow_package .claude "$HOME/.claude"
   fi
+  link_home_zshrc
   setup_zshenv
   check_signing_key
 

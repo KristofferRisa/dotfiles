@@ -90,9 +90,10 @@ jobs:
           TEST_HOME="$RUNNER_TEMP/home"
           echo "TEST_HOME=$TEST_HOME" >> "$GITHUB_ENV"
           mkdir -p "$TEST_HOME/.claude" "$TEST_HOME/.config/zsh"
-          # What Claude Code writes on first launch, and a stale .zshrc.
+          # What Claude Code writes on first launch, and stale .zshrc files.
           echo '{"theme":"dark"}' > "$TEST_HOME/.claude/settings.json"
           echo '# old' > "$TEST_HOME/.config/zsh/.zshrc"
+          echo '# old home' > "$TEST_HOME/.zshrc"
           echo 'unrelated' > "$TEST_HOME/.config/keep.txt"
           # zsh state another machine left in the repo must never be linked.
           touch .config/zsh/.zcompdump-ci .config/zsh/.zsh_history
@@ -124,7 +125,9 @@ jobs:
           grep -q old "$H"/.dotfiles-backup/*/.config/zsh/.zshrc
           grep -q 'ZDOTDIR=.*/.config/zsh' "$H/.zshenv"
           [[ -d "$H/.oh-my-zsh/custom/themes/powerlevel10k" ]]
-          [[ ! -e "$H/.zshrc" ]]
+          # Tools that hardcode ~/.zshrc must get the same config as zsh.
+          [[ "$(readlink "$H/.zshrc")" == "$H/.config/zsh/.zshrc" ]]
+          grep -q 'old home' "$H"/.dotfiles-backup/*/.zshrc
 
       - name: Second run is a no-op
         run: |
