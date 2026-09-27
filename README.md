@@ -57,7 +57,6 @@ Same as `git pull && ./install.sh`, or re-run the one-liner, which does both.
 ├── git/         # Global git config, SSH commit signing
 ├── lazygit/     # lazygit: Nerd Font v3 icons
 ├── nvim/        # LazyVim with .NET, Go, Vue, Tailwind, DAP and Claude Code extras
-├── opencode/    # OpenCode agents
 ├── tmux/        # Ctrl+a prefix, vim-style panes
 └── zsh/         # Oh My Zsh + Powerlevel10k, aliases, completions
 .claude/
