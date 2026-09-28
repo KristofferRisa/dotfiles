@@ -6,7 +6,7 @@ Guidance for AI coding agents (Claude Code, OpenCode, and others) working in thi
 
 ## Repository Overview
 
-Personal dotfiles. GNU Stow symlinks `.config` into `~/.config` and `.claude` into `~/.claude`, so the files here are the live config on every machine that ran the installer. A broken file here breaks a real shell.
+Personal dotfiles. GNU Stow symlinks `.config` into `~/.config`, `.claude` into `~/.claude`, and `.grok` into `~/.grok`, so the files here are the live config on every machine that ran the installer. A broken file here breaks a real shell.
 
 ## Installation
 
@@ -14,7 +14,7 @@ Personal dotfiles. GNU Stow symlinks `.config` into `~/.config` and `.claude` in
 
 - Installs dependencies. macOS: Homebrew if needed, then `BREW_PACKAGES` (stow, jq, lazygit, tmux, neovim, sky). Linux: `LINUX_PACKAGES` (git, stow, zsh, tmux) via apt, pacman, or dnf.
 - Installs Oh My Zsh (to `~/.oh-my-zsh`) and Powerlevel10k when missing. The Oh My Zsh installer must be called with `ZDOTDIR` empty and `--keep-zshrc`, or it overwrites the symlinked `.zshrc`.
-- Links `.config` and `.claude` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted.
+- Links `.config`, `.claude`, and `.grok` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted. `.grok` only carries `config.toml` (`[cli]` and `[ui]`) and the status line. Sessions, auth, and logs stay in `~/.grok` and are not part of this package.
 - Adds `ZDOTDIR` to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`, so `.zshrc` puts Homebrew on `PATH` itself.
 - Links `~/.zshrc` to `~/.config/zsh/.zshrc` (backing up whatever was there). zsh never reads it while `ZDOTDIR` is set, but Claude Code's shell snapshot and tool installers (nvm, rustup, grok) hardcode `~/.zshrc`; a stale copy there gives them a different shell than the terminal. Lines those installers append land in the repo `.zshrc`, so they show up in `git status`.
 
@@ -45,6 +45,11 @@ stow -R -t ~/.config .config
 .claude/
 ├── settings.json      # Claude Code settings (status line, plugins)
 └── statusline/        # Status line: bash + jq, no npm packages
+
+.grok/
+├── config.toml        # [cli] and [ui], including [ui.status_line]
+├── statusline.sh      # Entry point Grok runs
+└── statusline/        # render.jq
 
 .github/
 ├── workflows/         # CI, PR labeler
@@ -85,6 +90,13 @@ tests/statusline/      # Fixture tests for the status line cost math
 - `render.jq` draws the output (Catppuccin Mocha colours; honours `NO_COLOR`)
 - `statusline.sh --report` prints today's cost by model. `CLAUDE_STATUSLINE_DEBUG=1` saves the raw input to `~/.cache/claude-statusline/last-input.json`
 - Change the pricing math only together with `tests/statusline/`, whose expected dollar amounts were worked out by hand
+
+### Grok Build status line (`.grok/`)
+
+- `config.toml` is only `[cli]` and `[ui]`, including `[ui.status_line]`. Grok may append other tables (marketplace, privacy) into this file on launch, because the live path is this symlink
+- `statusline.sh` reads Grok's JSON on stdin and prints three lines: time and version, project (directory, git, model, context), and cost (session, today, cache). Grok shows at most five lines
+- Weather uses the same `sky` CLI, and only on a `refresh_interval` run. A background fetch would be killed when the script exits
+- Today's cost sums `usage.json` turns ended after local midnight. `costUsdTicks` is 10¹⁰ per USD
 
 ## Notes for Future Modifications
 
