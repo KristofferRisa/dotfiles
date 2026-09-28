@@ -16,7 +16,7 @@ terminal:
       - any-glob-to-any-file: .config/ghostty/**
 agents:
   - changed-files:
-      - any-glob-to-any-file: [.config/opencode/**, .claude/**]
+      - any-glob-to-any-file: [.config/opencode/**, .claude/**, .grok/**]
 docs:
   - changed-files:
       - any-glob-to-any-file: ["*.md", .config/**/README.md]

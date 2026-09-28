@@ -4,7 +4,7 @@ These are the working rules for this repo, for people and for AI agents (Claude 
 
 ## The one thing to remember
 
-Every file under `.config/` and `.claude/` is **live** on each machine that ran `install.sh`: `~/.config/zsh/.zshrc` *is* `.config/zsh/.zshrc`. Saving a broken file breaks the next shell that opens, before anything is committed. Test in a throwaway home (below) when you are unsure.
+Every file under `.config/`, `.claude/`, and `.grok/` is **live** on each machine that ran `install.sh`: `~/.config/zsh/.zshrc` *is* `.config/zsh/.zshrc`. Saving a broken file breaks the next shell that opens, before anything is committed. Test in a throwaway home (below) when you are unsure.
 
 ## Workflow
 
@@ -27,6 +27,7 @@ CI runs all of this, but it is faster to catch it locally.
 | nvim Lua | `stylua --check .config/nvim` |
 | `.github/workflows/` | `actionlint` |
 | `.claude/statusline/` | `shellcheck .claude/statusline/statusline.sh` and `tests/statusline/run.sh` |
+| `.grok/statusline.sh` | `shellcheck .grok/statusline.sh` |
 
 `brew install shellcheck shfmt stylua actionlint jq` gets all of them.
 
