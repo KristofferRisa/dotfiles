@@ -426,6 +426,7 @@ main() {
   else
     stow_package .config "$HOME/.config"
     stow_package .claude "$HOME/.claude"
+    stow_package .grok "$HOME/.grok"
   fi
   link_home_zshrc
   setup_zshenv

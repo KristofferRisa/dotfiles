@@ -24,7 +24,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh tmux
 
       - name: ShellCheck
-        run: shellcheck install.sh .claude/statusline/statusline.sh tests/statusline/run.sh
+        run: shellcheck install.sh .claude/statusline/statusline.sh .grok/statusline.sh tests/statusline/run.sh
 
       - name: shfmt
         run: |
@@ -89,7 +89,8 @@ jobs:
           # A throwaway home, so the runner's own dotfiles never mask a problem.
           TEST_HOME="$RUNNER_TEMP/home"
           echo "TEST_HOME=$TEST_HOME" >> "$GITHUB_ENV"
-          mkdir -p "$TEST_HOME/.claude" "$TEST_HOME/.config/zsh"
+          mkdir -p "$TEST_HOME/.claude" "$TEST_HOME/.config/zsh" "$TEST_HOME/.grok"
+          echo 'old = true' > "$TEST_HOME/.grok/config.toml"
           # What Claude Code writes on first launch, and stale .zshrc files.
           echo '{"theme":"dark"}' > "$TEST_HOME/.claude/settings.json"
           echo '# old' > "$TEST_HOME/.config/zsh/.zshrc"
@@ -119,6 +120,11 @@ jobs:
           [[ -L "$H/.config/tmux" ]]
           [[ -L "$H/.config/git" ]]
           [[ -L "$H/.claude/statusline" ]]
+          [[ -L "$H/.grok/config.toml" ]]
+          [[ -L "$H/.grok/statusline.sh" ]]
+          [[ -L "$H/.grok/statusline" ]]
+          [[ -f "$H/.grok/statusline/render.jq" ]]
+          grep -q 'old = true' "$H"/.dotfiles-backup/*/.grok/config.toml
           [[ ! -e "$H/.config/zsh/.zcompdump-ci" && ! -e "$H/.config/zsh/.zsh_history" ]]
           [[ "$(cat "$H/.config/keep.txt")" == unrelated ]]
           grep -q theme "$H"/.dotfiles-backup/*/.claude/settings.json

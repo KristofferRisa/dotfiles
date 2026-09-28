@@ -1,0 +1,16 @@
+[cli]
+installer = "npm"
+auto_update = true
+
+[ui]
+max_thoughts_width = 120
+fork_secondary_model = "grok-build"
+yolo = false
+compact_mode = false
+permission_mode = "always-approve"
+vim_mode = false
+
+[ui.status_line]
+type = "command"
+command = "~/.grok/statusline.sh"
+refresh_interval = 300
