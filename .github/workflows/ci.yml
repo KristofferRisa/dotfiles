@@ -1,9 +1,18 @@
 name: CI
 
+# PRs are the only gate: main is production (install.sh is served straight
+# from raw.githubusercontent.com/.../main), and the PR run already tests the
+# merge result, so a second run on push to main would only repeat it.
 on:
-  push:
-    branches: [main]
   pull_request:
+    paths-ignore:
+      - "README.md"
+      - "AGENTS.md"
+      - "CONTRIBUTING.md"
+      - "LICENSE"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/pull_request_template.md"
+      - ".github/FUNDING.yml"
   workflow_dispatch:
 
 permissions:
@@ -14,11 +23,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Lint and the secret scan share one job: both take seconds, and a job of
+  # its own costs a full billed minute and a second checkout.
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      macos: ${{ steps.changes.outputs.macos }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # ~/.config/zsh is a link into this repo, so a stray history file or
+      # .zshrc.local could carry tokens into a commit.
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The macOS install leg costs 10x a Linux minute, so it runs only when
+      # something that behaves differently there changed: the installer
+      # (Homebrew path), zsh startup, the status lines (BSD vs GNU date/find),
+      # or this workflow. A manual run always includes it.
+      - name: Does this change need macOS?
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [[ "$EVENT" != pull_request ]]; then
+            echo "macos=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          echo "$changed"
+          if grep -qE '^(install\.sh|\.config/zsh/|\.claude/statusline/|\.grok/|tests/|\.github/workflows/ci\.yml)' <<<"$changed"; then
+            echo "macos=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "macos=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Install zsh and tmux
         run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh tmux
@@ -60,27 +105,16 @@ jobs:
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
           ./actionlint -color
 
-  secrets:
-    name: Secret scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      # ~/.config/zsh is a link into this repo, so a stray history file or
-      # .zshrc.local could carry tokens into a commit.
-      - uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   install:
     name: Install (${{ matrix.os }})
     needs: lint
+    # Linux always runs: every change to install.sh or anything it links.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: ${{ fromJSON(needs.lint.outputs.macos == 'true' && '["ubuntu-latest","macos-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
 

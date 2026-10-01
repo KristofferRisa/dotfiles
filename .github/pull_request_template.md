@@ -4,7 +4,8 @@
 
 ## Test plan
 
-<!-- CI runs lint, a secret scan, and a fresh install on macOS and Linux.
+<!-- CI runs lint, a secret scan, and a fresh install on Linux, plus macOS
+     when install.sh, zsh, the status lines or tests change.
      List what you checked by hand on a real machine. -->
 
 - [ ] Opened a new shell / tmux / nvim and it behaves as described
