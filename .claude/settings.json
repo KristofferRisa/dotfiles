@@ -10,5 +10,7 @@
   },
   "alwaysThinkingEnabled": true,
   "tui": "fullscreen",
-  "model": "sonnet"
+  "model": "sonnet",
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true
 }
