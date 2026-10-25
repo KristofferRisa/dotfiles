@@ -7,7 +7,7 @@ Personal config for zsh, tmux, neovim, ghostty, and a few other tools. [GNU Stow
 ## Install
 
 ```bash
-curl -fsSL https://kristoffer.dev/dotfiles/install | bash
+curl -fsSL https://kristoffer.dev/dotfiles/install.sh | bash
 ```
 
 Or straight from GitHub:
@@ -19,7 +19,7 @@ curl -fsSL https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/instal
 Look first, change nothing:
 
 ```bash
-curl -fsSL https://kristoffer.dev/dotfiles/install | bash -s -- --dry-run
+curl -fsSL https://kristoffer.dev/dotfiles/install.sh | bash -s -- --dry-run
 ```
 
 Both commands clone this repo to `~/dotfiles` and run `install.sh`. The script:
@@ -223,11 +223,11 @@ stow -D -t ~/.grok .grok
 
 ## Installer URL
 
-The short address is `https://kristoffer.dev/dotfiles/install`. It is a small shim served by the [kristoffer.dev](https://github.com/KristofferRisa/kristoffer.dev) site (`static/dotfiles/install`) that fetches this repo's `install.sh` and runs it with the same arguments — no DNS or redirect rule to keep working, since it deploys with the rest of that site.
+The short address is `https://kristoffer.dev/dotfiles/install.sh`. It is a small shim served by the [kristoffer.dev](https://github.com/KristofferRisa/kristoffer.dev) site that fetches this repo's `install.sh` from `main` and runs it with the same arguments, so it never goes stale.
 
-`install.kristoffer.dev/dotfiles` was a Cloudflare redirect rule to the raw GitHub file. It is not part of either repo and has been unreliable, so the site address above is what's documented now. The old `kristoffer.dev/dotfiles/install.sh` (with the extension) still works too, for links made before this change.
+`https://kristoffer.dev/dotfiles/install` (without `.sh`) and `install.kristoffer.dev/dotfiles` do not work: the first is a 404 and the second has no DNS record.
 
-Either way, `curl -fsSL` prints the real script first, straight from GitHub:
+To read the script before running it:
 
 `https://raw.githubusercontent.com/KristofferRisa/dotfiles/main/install.sh`
 
