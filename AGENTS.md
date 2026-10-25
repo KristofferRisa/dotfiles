@@ -36,7 +36,7 @@ stow -R -t ~/.config .config
 ```
 .config/
 ├── ghostty/           # Ghostty terminal config
-├── git/               # Global git config + allowed_signers (SSH commit signing)
+├── git/               # Global git config + allowed_signers (GPG commit signing)
 ├── lazygit/           # lazygit config
 ├── nvim/              # LazyVim config
 ├── tmux/              # tmux config
@@ -77,8 +77,8 @@ tests/statusline/      # Fixture tests for the status line cost math
 
 ### Git (`.config/git/`)
 
-- git reads `~/.config/git/config` natively. It signs every commit and tag with SSH (`~/.ssh/id_ed25519.pub`)
-- `allowed_signers` lists the public keys trusted for local verification. Add each machine's key
+- git reads `~/.config/git/config` natively. It signs every commit and tag with GPG (`gpg.format = openpgp`, key in `user.signingKey`)
+- `allowed_signers` keeps the SSH public keys of commits signed before the switch to GPG, so they still verify locally
 - Machine-specific overrides go in `config.local` (gitignored, included last)
 
 ### Claude Code status line (`.claude/statusline/`)

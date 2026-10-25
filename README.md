@@ -54,7 +54,7 @@ Same as `git pull && ./install.sh`, or re-run the one-liner, which does both.
 ```
 .config/
 ├── ghostty/     # Terminal: Catppuccin Mocha, OSC 52 clipboard
-├── git/         # Global git config, SSH commit signing
+├── git/         # Global git config, GPG commit signing
 ├── lazygit/     # lazygit: Nerd Font v3 icons
 ├── nvim/        # LazyVim with .NET, Go, Vue, Tailwind, DAP and Claude Code extras
 ├── tmux/        # Ctrl+a prefix, vim-style panes
@@ -176,19 +176,18 @@ It replaces `@owloops/claude-powerline`, which priced models it didn't know by f
 
 ## Signed commits
 
-`.config/git/config` signs every commit and tag with `~/.ssh/id_ed25519.pub` (SSH signing). The installer warns if that key is missing, because commits fail without it.
+`.config/git/config` signs every commit and tag with a GPG key (`gpg.format = openpgp`, `user.signingKey`). The installer warns if that key is not in the machine's keyring, because commits fail without it. It only warns; it never creates or imports a key.
 
-On a new machine:
+On a new machine, import the secret key from your backup:
 
 ```bash
-ssh-keygen -t ed25519 -C "$(git config user.email)"      # skip if the key exists
-gh auth refresh -h github.com -s admin:ssh_signing_key
-gh ssh-key add ~/.ssh/id_ed25519.pub --type signing --title "$(hostname -s)"
+gpg --import <path-to-your-secret-key>
+gpg --list-secret-keys --keyid-format long      # should list the key in .config/git/config
 ```
 
-GitHub shows commits as **Verified** once the key is added as a *signing* key. An authentication key alone is not enough, even if it is the same key.
+GitHub shows commits as **Verified** once the public key is added under Settings -> SSH and GPG keys (`gpg --armor --export <key id>`).
 
-Add the key to `.config/git/allowed_signers` too, so `git log --show-signature` can verify it locally. To use a different key or email on one machine, put the override in `~/.config/git/config.local`; it is gitignored.
+To use a different key or email on one machine, put the override in `~/.config/git/config.local`; it is gitignored. A machine can also sign with SSH there (`gpg.format = ssh`, `user.signingKey`); the installer then checks that key instead. `.config/git/allowed_signers` stays for commits made earlier with SSH signing, so `git log --show-signature` can still verify them.
 
 If `~/.gitconfig` exists, git reads it after `~/.config/git/config`, and its settings win. Delete it once the tracked config covers everything you need.
 
