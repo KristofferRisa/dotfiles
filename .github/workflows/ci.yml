@@ -3,16 +3,12 @@ name: CI
 # PRs are the gate: main is production (install.sh is served straight from
 # raw.githubusercontent.com/.../main), and the PR run already tests the merge
 # result, so a second run on push to main would only repeat it.
+# Every PR runs, docs-only ones too: the main ruleset requires Lint and
+# Install (ubuntu-latest), and a workflow skipped by a path filter never
+# reports them, so the PR could not merge. Linux minutes are cheap; the
+# macOS leg stays gated below.
 on:
   pull_request:
-    paths-ignore:
-      - "README.md"
-      - "AGENTS.md"
-      - "CONTRIBUTING.md"
-      - "LICENSE"
-      - ".github/ISSUE_TEMPLATE/**"
-      - ".github/pull_request_template.md"
-      - ".github/FUNDING.yml"
   # main is production and apt, Homebrew, Oh My Zsh and Powerlevel10k change
   # under it with no commit here, so test it weekly. This also keeps the
   # README badge current now that pushes to main do not run CI.
