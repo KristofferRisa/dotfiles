@@ -43,7 +43,7 @@ stow -R -t ~/.config .config
 └── zsh/               # .zshrc, .p10k.zsh, completions, mouse fixes
 
 .claude/
-├── settings.json      # Claude Code settings (status line, plugins)
+├── settings.json      # Claude Code settings (status line, plugins, no AI attribution)
 └── statusline/        # Status line: bash + jq, no npm packages
 
 .grok/

@@ -12,5 +12,9 @@
   "tui": "fullscreen",
   "model": "sonnet",
   "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true
+  "agentPushNotifEnabled": true,
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  }
 }
