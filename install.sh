@@ -324,27 +324,57 @@ setup_zshenv() {
   fi
 }
 
-# .config/git/config signs every commit with this key, so without it every
-# commit fails. Generating or uploading a key is the user's call; say how.
+# .config/git/config signs every commit with GPG, so without the key on this
+# machine every commit fails. A machine can sign with SSH instead through
+# config.local or ~/.gitconfig. Getting the key there is the user's call; say how.
 check_signing_key() {
-  local key="$HOME/.ssh/id_ed25519.pub"
+  local repo_config="$DOTFILES_DIR/.config/git/config" format key
 
-  if [[ -f "$key" ]]; then
+  # The global config is the linked file plus this machine's overrides. Before
+  # linking (a --dry-run on a new machine) only the repo file has the values.
+  format="$(git config --global --includes --get gpg.format ||
+    git config --file "$repo_config" --get gpg.format || true)"
+  key="$(git config --global --includes --get user.signingkey ||
+    git config --file "$repo_config" --get user.signingkey || true)"
+
+  if [[ -z "$key" ]]; then
+    return 0
+  fi
+
+  if [[ "$format" == ssh ]]; then
+    if [[ "$key" == key::* || -f "${key/#\~/$HOME}" ]]; then
+      log "Commit signing key found: SSH key from git config"
+      return 0
+    fi
+
+    cat <<EOF
+
+Note: git signs commits with SSH key $key, which does not exist.
+Commits will fail until you create it, or remove the SSH override from
+~/.config/git/config.local or ~/.gitconfig to sign with GPG.
+See README.md, "Signed commits".
+
+EOF
+    return 0
+  fi
+
+  # gpg creates its home directory on first use, which --dry-run must not do.
+  if [[ -d "${GNUPGHOME:-$HOME/.gnupg}" ]] && command -v gpg >/dev/null 2>&1 &&
+    gpg --list-secret-keys "$key" >/dev/null 2>&1; then
     log "Commit signing key found: $key"
     return 0
   fi
 
   cat <<EOF
 
-Note: git signs commits with $key, which does not exist yet.
-Commits will fail until you create it and add it to GitHub:
+Note: git signs commits with GPG key $key, which is not in this machine's
+keyring (or gpg is not installed). Commits will fail until you import it:
 
-  ssh-keygen -t ed25519 -C "\$(git config user.email)"
-  gh auth refresh -h github.com -s admin:ssh_signing_key
-  gh ssh-key add ~/.ssh/id_ed25519.pub --type signing --title "\$(hostname -s)"
-  gh ssh-key add ~/.ssh/id_ed25519.pub --type authentication --title "\$(hostname -s)"
+  gpg --import <path-to-your-secret-key>      # or restore it from your backup
+  gpg --list-secret-keys --keyid-format long  # should now list $key
 
-Then add the key to ~/.config/git/allowed_signers, or use another key via
+GitHub shows commits as Verified once the public key is under Settings ->
+SSH and GPG keys. To use another key on this machine, set user.signingKey in
 ~/.config/git/config.local. See README.md, "Signed commits".
 
 EOF
