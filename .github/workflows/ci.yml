@@ -70,7 +70,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh tmux
 
       - name: ShellCheck
-        run: shellcheck install.sh .claude/statusline/statusline.sh .grok/statusline.sh tests/statusline/run.sh
+        run: shellcheck install.sh .claude/statusline/statusline.sh .grok/statusline.sh tests/statusline/run.sh tests/grok-statusline/run.sh
 
       - name: shfmt
         run: |
@@ -197,6 +197,9 @@ jobs:
       # the script falls back between BSD and GNU date/find.
       - name: Status line tests
         run: tests/statusline/run.sh
+
+      - name: Grok status line tests
+        run: tests/grok-statusline/run.sh
 
       - name: Status line renders from the installed link
         run: |

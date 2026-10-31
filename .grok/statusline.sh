@@ -4,12 +4,17 @@
 #   [ui.status_line]
 #   type = "command"
 #   command = "~/.grok/statusline.sh"
-#   refresh_interval = 300
+#   refresh_interval = 30
 #
-# Grok writes one JSON object to stdin. This prints at most three lines.
+# Grok writes one JSON object to stdin. This prints at most five lines.
 # Weather hits the network only when trigger is refresh_interval. Today's
 # cost is summed from session usage files (costUsdTicks / 1e10).
+# The Synapse area is read from its context cache. Only a refresh_interval
+# run may ask the network; every other run stays offline.
 set -uo pipefail
+
+# A status line has no shell rc, so brew, sky and synapse are not on PATH.
+export PATH="/opt/homebrew/bin:/usr/local/bin:${HOME}/.local/bin:${PATH}"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GROK_DIR="${GROK_HOME:-$HOME/.grok}"
@@ -91,6 +96,57 @@ refresh_weather() {
   fi
 }
 
+# First 16 hex chars. macOS has shasum; GNU coreutils has sha1sum.
+sha1_16() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum | cut -c1-16
+  else
+    sha1sum | cut -c1-16
+  fi
+}
+
+# Same key as `synapse context` (commands/context.ts, cacheKey).
+synapse_cache_path() {
+  local sid="$1" cwd="$2" key sum
+  if [[ "$sid" =~ ^[A-Za-z0-9._:-]{1,100}$ ]]; then
+    key="$sid"
+  else
+    sum="$(printf '%s' "$cwd" | sha1_16 || true)"
+    [[ -n "$sum" ]] || sum="unknown"
+    key="cwd-${sum}"
+  fi
+  printf '%s/synapse/context/%s.json' "${XDG_CACHE_HOME:-$HOME/.cache}" "$key"
+}
+
+# Grok kills anything still running when this exits, so the refresh waits.
+# The network is only used on the timer; a state redraw stays on disk.
+refresh_synapse() {
+  local trigger="$1" cache="$2" payload="$3" bin ttl mtime now
+  [[ "${SYNAPSE_STATUSLINE:-1}" != 0 ]] || return 0
+  bin="${SYNAPSE_BIN:-}"
+  if [[ -z "$bin" ]]; then
+    if [[ -x "${HOME}/.local/bin/synapse" ]]; then
+      bin="${HOME}/.local/bin/synapse"
+    elif command -v synapse >/dev/null 2>&1; then
+      bin="$(command -v synapse)"
+    else
+      return 0
+    fi
+  fi
+  ttl="${SYNAPSE_STATUSLINE_TTL:-20}"
+  if [[ -f "$cache" ]]; then
+    mtime="$(stat -f %m "$cache" 2>/dev/null || stat -c %Y "$cache" 2>/dev/null || echo 0)"
+    now="$(date +%s)"
+    if ((now - mtime < ttl)); then
+      return 0
+    fi
+  fi
+  local -a args=(context status --stdin --harness grok --cache --format none)
+  [[ "$trigger" == "refresh_interval" ]] || args+=(--offline)
+  mkdir -p "$(dirname "$cache")"
+  printf '%s' "$payload" | run_bounded 4 "$bin" "${args[@]}" >/dev/null 2>&1 || true
+}
+
 main() {
   local input
   input="$(cat)"
@@ -131,12 +187,19 @@ main() {
     weather_file=/dev/null
   fi
 
-  local color=1
+  local color=1 sid synapse_cache synapse_arg=null
   [[ -n "${NO_COLOR:-}" ]] && color=0
+  sid="$(jq -r '.session_id // ""' <<<"$input" 2>/dev/null || echo "")"
+  synapse_cache="$(synapse_cache_path "$sid" "$dir")"
+  refresh_synapse "$trigger" "$synapse_cache" "$input"
+  if [[ -f "$synapse_cache" ]]; then
+    synapse_arg="$(jq -c . "$synapse_cache" 2>/dev/null || echo null)"
+  fi
 
   jq -r --slurpfile today "$today_file" --slurpfile weather "$weather_file" \
     --arg branch "$branch" --arg dirty "$dirty" --arg ahead "$ahead" --arg behind "$behind" \
-    --arg color "$color" -f "$HERE/statusline/render.jq" <<<"$input"
+    --arg color "$color" --argjson synapse "$synapse_arg" \
+    -f "$HERE/statusline/render.jq" <<<"$input"
 }
 
 main "$@"
