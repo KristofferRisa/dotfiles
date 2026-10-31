@@ -65,7 +65,7 @@ Same as `git pull && ./install.sh`, or re-run the one-liner, which does both.
 .grok/
 ├── config.toml    # Grok Build [cli] and [ui], including the status line
 ├── statusline.sh
-└── statusline/    # Grok Build status line (bash + jq)
+└── statusline/    # Grok Build status line (bash + jq): project, cost, Synapse
 ```
 
 The first `nvim` launch installs every plugin. Give it a minute.

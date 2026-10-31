@@ -1,8 +1,11 @@
-# Compact Grok status line. At most three lines: Grok shows five and drops
-# the rest. Colors are Catppuccin Mocha. $color == "0" drops escapes.
+# Compact Grok status line. At most five lines: Grok drops the rest.
+# Colors are Catppuccin Mocha. $color == "0" drops escapes.
 #
 # stdin is the Grok status payload. $weather[0] and $today[0] are caches.
 # $branch, $dirty, $ahead, $behind come from git.
+# $synapse is the synapse context cache ({status, ...}) or null. The window
+# stays on PROJECT and the session cost on COST. SYNAPSE and IMPACT are added
+# only when that cache has something to say.
 
 def esc($code): if $color == "1" then "\u001b[\($code)m" else "" end;
 def rgb($hex):
@@ -69,6 +72,51 @@ def weather_icon:
 def wind_arrow: ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"][((. + 180) % 360 / 45 | round) % 8];
 
 def join_present: map(select(. != null and . != "")) | join(dot);
+
+# Labels share a 10-column gutter. jq 1.6 has no string multiply.
+def rowlabel($name; $hex):
+  fg($hex) + bold + $name + reset + ("          "[($name | length):]);
+
+def framed:
+  length as $n
+  | [range(0; $n) as $i
+     | fg(C.overlay)
+       + (if $i == 0 then "╭─ " elif $i == ($n - 1) then "╰─ " else "│  " end)
+       + reset
+       + .[$i]]
+  | .[];
+
+# Area from the cache. No area still gets a row, so the line is visibly there.
+def synapse_body:
+  (.synapse // null) as $syn
+  | if $syn == null then
+      dim(if (.repo // "") != "" then "ikke noe område for \(.repo)" else "ikke i et repo" end)
+    else
+      ($syn.live // null) as $live
+      | [
+          fg(C.mauve) + bold + "◆ \($syn.slug)@\($syn.size)" + reset,
+          (if $syn.via == "antatt" then dim("antatt") else "" end),
+          (if $live == null then dim("ikke sjekket")
+           elif ($live.error // "") != "" then fg(C.yellow) + "⚠ svarer ikke" + reset
+           elif $live.newer == true then fg(C.yellow) + bold + "↻ ny utgave" + reset
+           elif $live.due == true then fg(C.teal) + "⏳ oppdateres" + reset
+           else fg(C.green) + "✓ nyeste" + reset
+           end)
+        ] | join_present
+    end;
+
+# Last 7 days: sessions that received the area, and how many wrote back.
+def impact_body:
+  . as $i
+  | (if ($i.ended // 0) > 0 then ($i.wroteBack / $i.ended) else null end) as $share
+  | [
+      fg(C.text) + "\($i.week // 0) \(if ($i.week // 0) == 1 then "økt" else "økter" end)/7d" + reset,
+      (if $share == null then dim("ingen avsluttet ennå")
+       else fg(if $share < 0.5 then C.yellow else C.green end) + "\(($share * 100) | round)% skrev tilbake" + reset
+       end),
+      (if ($i.ended // 0) > 0 then dim("\($i.wroteBack) av \($i.ended)") else "" end),
+      (if $i.avgChars != null then fg(C.subtext) + "snitt \(($i.avgChars / 4) | tokens)" + reset else "" end)
+    ] | join_present;
 
 ($weather[0] // null) as $w
 | ($today[0] // {}) as $t
@@ -144,7 +192,16 @@ def join_present: map(select(. != null and . != "")) | join(dot);
     ] | join_present
   ) as $cost
 
-| fg(C.overlay) as $frame
-| ($frame + "╭─ " + reset + $header),
-  ($frame + "│  " + reset + fg(C.blue) + bold + "PROJECT" + reset + "   " + $project),
-  ($frame + "╰─ " + reset + fg(C.yellow) + bold + "COST" + reset + "      " + (if $cost == "" then dim("—") else $cost end))
+| (if ($synapse | type) == "object" then ($synapse.status // null) else null end) as $st
+| (
+    [$header,
+     rowlabel("PROJECT"; C.blue) + $project,
+     rowlabel("COST"; C.yellow) + (if $cost == "" then dim("—") else $cost end)]
+    + (if $st == null then []
+       else
+         [rowlabel("SYNAPSE"; C.mauve) + ($st | synapse_body)]
+         + (if ($st.impact // null) == null then []
+            else [rowlabel("IMPACT"; C.teal) + ($st.impact | impact_body)] end)
+       end)
+  )
+| framed

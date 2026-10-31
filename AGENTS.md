@@ -55,7 +55,8 @@ stow -R -t ~/.config .config
 ├── workflows/         # CI, PR labeler
 └── ISSUE_TEMPLATE/    # Bug, new-machine setup, config change
 
-tests/statusline/      # Fixture tests for the status line cost math
+tests/statusline/      # Fixture tests for the Claude status line cost math
+tests/grok-statusline/ # Grok status line rows, including Synapse
 ```
 
 ### Shell Environment
@@ -93,9 +94,11 @@ tests/statusline/      # Fixture tests for the status line cost math
 
 ### Grok Build status line (`.grok/`)
 
-- `config.toml` is only `[cli]` and `[ui]`, including `[ui.status_line]`. Grok may append other tables (marketplace, privacy) into this file on launch, because the live path is this symlink
-- `statusline.sh` reads Grok's JSON on stdin and prints three lines: time and version, project (directory, git, model, context), and cost (session, today, cache). Grok shows at most five lines
-- Weather uses the same `sky` CLI, and only on a `refresh_interval` run. A background fetch would be killed when the script exits
+- `config.toml` is only `[cli]` and `[ui]`, including `[ui.status_line]`. Grok may append other tables (marketplace, privacy) into this file on launch, because the live path is this symlink. `refresh_interval` is 30 seconds
+- `statusline.sh` reads Grok's JSON on stdin and prints at most five lines: a header (weather, time, version), PROJECT (directory, git, model, context window), COST (session, today, cache), then SYNAPSE and IMPACT when the Synapse cache has something to say. Grok drops anything past five lines. The context window stays on PROJECT and the session cost on COST; they are not repeated
+- SYNAPSE is read from `~/.cache/synapse/context/<session>.json`, which `synapse context status` writes. The script refreshes that cache itself. Only a `refresh_interval` run may use the network; other runs stay offline. The cache is reused for `SYNAPSE_STATUSLINE_TTL` seconds (20). `SYNAPSE_STATUSLINE=0` skips the refresh. With no cache and no `synapse` binary, the row stays the original three lines
+- IMPACT is the area's last 7 days: sessions, how many wrote back, and average size. It appears only when that cache carries an impact. A directory with no area still gets a SYNAPSE row
+- Weather uses the same `sky` CLI, and only on a `refresh_interval` run. A background fetch would be killed when the script exits. The weather stamp lasts 10 minutes
 - Today's cost sums `usage.json` turns ended after local midnight. `costUsdTicks` is 10¹⁰ per USD
 
 ## Notes for Future Modifications
