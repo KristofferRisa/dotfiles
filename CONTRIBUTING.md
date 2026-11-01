@@ -27,7 +27,7 @@ CI runs all of this, but it is faster to catch it locally.
 | nvim Lua | `stylua --check .config/nvim` |
 | `.github/workflows/` | `actionlint` |
 | `.claude/statusline/` | `shellcheck .claude/statusline/statusline.sh` and `tests/statusline/run.sh` |
-| `.grok/statusline.sh` | `shellcheck .grok/statusline.sh` |
+| `.grok/statusline.sh` | `shellcheck .grok/statusline.sh` and `tests/grok-statusline/run.sh` |
 
 `brew install shellcheck shfmt stylua actionlint jq` gets all of them.
 
