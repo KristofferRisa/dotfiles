@@ -1,8 +1,8 @@
 #!/bin/bash
 # Install dotfiles.
 #
-#   curl -fsSL https://kristoffer.dev/dotfiles/install | bash
-#   curl -fsSL https://kristoffer.dev/dotfiles/install | bash -s -- --dry-run
+#   curl -fsSL https://kristoffer.dev/dotfiles/install.sh | bash
+#   curl -fsSL https://kristoffer.dev/dotfiles/install.sh | bash -s -- --dry-run
 #   ./install.sh [--dry-run] [--link-only] [--update]
 #
 # A piped shell is still reading this script from stdin, so the first run
