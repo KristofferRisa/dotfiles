@@ -27,7 +27,8 @@ Both commands clone this repo to `~/dotfiles` and run `install.sh`. The script:
 1. Installs what the configs need. On macOS: Homebrew (if missing), Stow, jq, lazygit, tmux, neovim, and [sky](https://github.com/KristofferRisa/sky-cli) (weather for the status line). On Linux: `git`, `stow`, `zsh`, and `tmux` with apt, pacman, or dnf.
 2. Installs Oh My Zsh and Powerlevel10k when they are not already there.
 3. Links `.config` into `~/.config`, `.claude` into `~/.claude`, and `.grok` into `~/.grok`. Anything already in the way is moved to `~/.dotfiles-backup/<timestamp>/`. Nothing is deleted.
-4. Adds `export ZDOTDIR="$HOME/.config/zsh"` to `~/.zshenv`, so zsh reads its config from this repo, and links `~/.zshrc` to the same file for tools that read `~/.zshrc` directly (Claude Code's shell, nvm and rustup installers). An existing `~/.zshrc` is backed up first.
+4. Merges the Codex CLI status line (`.codex/tui.toml`) into `~/.codex/config.toml` when Codex is installed. That file is not linked: Codex keeps trusted project paths in it.
+5. Adds `export ZDOTDIR="$HOME/.config/zsh"` to `~/.zshenv`, so zsh reads its config from this repo, and links `~/.zshrc` to the same file for tools that read `~/.zshrc` directly (Claude Code's shell, nvm and rustup installers). An existing `~/.zshrc` is backed up first.
 
 Open a new terminal when it finishes. Run it again whenever you like; a second run changes nothing.
 
@@ -66,6 +67,8 @@ Same as `git pull && ./install.sh`, or re-run the one-liner, which does both.
 ├── config.toml    # Grok Build [cli] and [ui], including the status line
 ├── statusline.sh
 └── statusline/    # Grok Build status line (bash + jq): project, cost, Synapse
+.codex/
+└── tui.toml       # Codex CLI status line and terminal title, merged by install.sh
 ```
 
 The first `nvim` launch installs every plugin. Give it a minute.
@@ -173,6 +176,14 @@ The installer adds sky on macOS; elsewhere, `brew install kristofferrisa/sky/sky
 `bash ~/.claude/statusline/statusline.sh --report` prints today's cost by model.
 
 It replaces `@owloops/claude-powerline`, which priced models it didn't know by falling back to a family match. `claude-opus-5-5` matched plain `opus` and was billed at Opus 4's $15/$75 per million tokens, so a real $7.13 day showed as $38.63. Here, each model id uses the longest matching key in `pricing.json`, and an unknown model is flagged rather than guessed. When a new model launches, add its row.
+
+## Codex status line
+
+Codex's status line shows only its own items; it cannot run a script like the Claude Code and Grok ones. `.codex/tui.toml` picks the closest set: project, branch, model and reasoning, context used, the 5-hour and weekly limits, and tokens used. The installer adds those keys under `[tui]` in `~/.codex/config.toml` and leaves keys you already have there, including a status line chosen with `/statusline`.
+
+The SYNAPSE and IMPACT rows come from `cx`, which starts Codex with `synapse context --harness codex --watch 5` in a pane below it. That needs tmux and synapse; otherwise `cx` is plain `codex`. Arguments go through: `cx resume --last`.
+
+The Synapse session hooks are not part of this repo. `synapse context install --only codex` writes them to `~/.codex/hooks.json`, and Codex asks you to trust them once (`/hooks`).
 
 ## Signed commits
 
