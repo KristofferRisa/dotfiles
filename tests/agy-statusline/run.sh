@@ -120,7 +120,8 @@ check "dry-run creates nothing" "$(test ! -e "$AGY_DIR" && echo ok || echo creat
 DRY_RUN=0
 configure_agy >/dev/null
 check "creates settings.json" "$(jq -r '.statusLine.command' "$AGY_DIR/settings.json")" "bash ~/.gemini/antigravity-cli/statusline.sh"
-mode="$(stat -f %Lp "$AGY_DIR/settings.json" 2>/dev/null || stat -c %a "$AGY_DIR/settings.json")"
+# GNU stat first: on Linux `stat -f` succeeds with filesystem info instead of the mode.
+mode="$(stat -c %a "$AGY_DIR/settings.json" 2>/dev/null || stat -f %Lp "$AGY_DIR/settings.json")"
 check "settings.json mode 600" "$mode" "600"
 
 # Existing keys are preserved when merging statusLine.
