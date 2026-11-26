@@ -15,6 +15,7 @@ Personal dotfiles. GNU Stow symlinks `.config` into `~/.config`, `.claude` into 
 - Installs dependencies. macOS: Homebrew if needed, then `BREW_PACKAGES` (stow, jq, lazygit, tmux, neovim, sky). Linux: `LINUX_PACKAGES` (git, stow, zsh, tmux) via apt, pacman, or dnf.
 - Installs Oh My Zsh (to `~/.oh-my-zsh`) and Powerlevel10k when missing. The Oh My Zsh installer must be called with `ZDOTDIR` empty and `--keep-zshrc`, or it overwrites the symlinked `.zshrc`.
 - Links `.config`, `.claude`, and `.grok` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted. `.grok` only carries `config.toml` (`[cli]` and `[ui]`) and the status line. Sessions, auth, and logs stay in `~/.grok` and are not part of this package.
+- Merges `.codex/tui.toml` into `~/.codex/config.toml` (`configure_codex`), only when `~/.codex` exists. Not a Stow link: Codex writes trusted project paths and hook trust hashes into that file, and this repo is public. A key already under `[tui]` is left alone, so a second run and `/statusline` choices are safe.
 - Adds `ZDOTDIR` to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`, so `.zshrc` puts Homebrew on `PATH` itself.
 - Links `~/.zshrc` to `~/.config/zsh/.zshrc` (backing up whatever was there). zsh never reads it while `ZDOTDIR` is set, but Claude Code's shell snapshot and tool installers (nvm, rustup, grok) hardcode `~/.zshrc`; a stale copy there gives them a different shell than the terminal. Lines those installers append land in the repo `.zshrc`, so they show up in `git status`.
 
@@ -51,12 +52,16 @@ stow -R -t ~/.config .config
 ├── statusline.sh      # Entry point Grok runs
 └── statusline/        # render.jq
 
+.codex/
+└── tui.toml           # [tui] keys merged into ~/.codex/config.toml, never linked
+
 .github/
 ├── workflows/         # CI, PR labeler
 └── ISSUE_TEMPLATE/    # Bug, new-machine setup, config change
 
 tests/statusline/      # Fixture tests for the Claude status line cost math
 tests/grok-statusline/ # Grok status line rows, including Synapse
+tests/codex-config/    # configure_codex merge: keeps Codex's own keys and trusted paths
 ```
 
 ### Shell Environment
@@ -100,6 +105,13 @@ tests/grok-statusline/ # Grok status line rows, including Synapse
 - IMPACT is the area's last 7 days: sessions, how many wrote back, and average size. It appears only when that cache carries an impact. A directory with no area still gets a SYNAPSE row
 - Weather uses the same `sky` CLI, and only on a `refresh_interval` run. A background fetch would be killed when the script exits. The weather stamp lasts 10 minutes
 - Today's cost sums `usage.json` turns ended after local midnight. `costUsdTicks` is 10¹⁰ per USD
+
+### Codex CLI (`.codex/`, `.config/zsh/codex.zsh`)
+
+- Codex's `[tui].status_line` and `terminal_title` take built-in item ids only (`codex doctor` flags unknown title items). A command-driven status line exists only behind the unfinished `tui_extensions_statusline` feature
+- `tui.toml` is one `key = value` per line; `configure_codex` reads it line by line, so keep each value on one line
+- `cx` puts `synapse context --harness codex --watch 5` in a 14-row tmux pane under Codex and closes it when Codex exits
+- Synapse's SessionStart/SessionEnd hooks live in `~/.codex/hooks.json`, written by `synapse context install --only codex`, not by this repo
 
 ## Notes for Future Modifications
 

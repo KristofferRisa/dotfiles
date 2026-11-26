@@ -324,6 +324,72 @@ setup_zshenv() {
   fi
 }
 
+# Is KEY set in the [tui] table of a TOML file? Only the exact [tui] header
+# counts; [tui.something] is another table.
+tui_has_key() {
+  local file="$1" key="$2"
+  [[ -f "$file" ]] || return 1
+  awk -v key="$key" '
+    /^[[:space:]]*\[/ { in_tui = ($0 ~ /^[[:space:]]*\[tui\][[:space:]]*(#.*)?$/); next }
+    in_tui && $0 ~ "^[[:space:]]*\"?" key "\"?[[:space:]]*=" { found = 1 }
+    END { exit !found }
+  ' "$file"
+}
+
+# Put LINE right under the [tui] header, or add the table at the end.
+# Rewrites in place so the file keeps its mode (Codex makes it 0600).
+add_tui_line() {
+  local file="$1" line="$2" tmp
+  tmp="$(mktemp "${file}.XXXXXX")"
+  if [[ -f "$file" ]] && grep -qE '^[[:space:]]*\[tui\][[:space:]]*(#.*)?$' "$file"; then
+    awk -v line="$line" '
+      { print }
+      !done && /^[[:space:]]*\[tui\][[:space:]]*(#.*)?$/ { print line; done = 1 }
+    ' "$file" >"$tmp"
+  else
+    {
+      [[ -s "$file" ]] && cat "$file" && printf '\n'
+      printf '[tui]\n%s\n' "$line"
+    } >"$tmp"
+  fi
+  if [[ -f "$file" ]]; then
+    cat "$tmp" >"$file"
+    rm -f "$tmp"
+  else
+    chmod 600 "$tmp"
+    mv "$tmp" "$file"
+  fi
+}
+
+# Codex keeps trusted project paths in ~/.codex/config.toml, so that file
+# cannot be a link into this public repo. Merge the [tui] keys from
+# .codex/tui.toml instead. A key the machine already has is its own choice
+# (/statusline writes there too) and stays.
+configure_codex() {
+  local src="$DOTFILES_DIR/.codex/tui.toml"
+  local dir="${CODEX_HOME:-$HOME/.codex}"
+  local config="$dir/config.toml" line key
+
+  [[ -f "$src" ]] || return 0
+  if [[ ! -d "$dir" ]]; then
+    log "Codex not installed ($dir missing), skipping its status line"
+    return 0
+  fi
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_-]*)[[:space:]]*= ]] || continue
+    key="${BASH_REMATCH[1]}"
+    if tui_has_key "$config" "$key"; then
+      log "Codex tui.$key already set in $config"
+    elif ((DRY_RUN)); then
+      log "  would set Codex tui.$key in $config"
+    else
+      add_tui_line "$config" "$line"
+      log "Set Codex tui.$key in $config"
+    fi
+  done <"$src"
+}
+
 # .config/git/config signs every commit with GPG, so without the key on this
 # machine every commit fails. A machine can sign with SSH instead through
 # config.local or ~/.gitconfig. Getting the key there is the user's call; say how.
@@ -460,6 +526,7 @@ main() {
   fi
   link_home_zshrc
   setup_zshenv
+  configure_codex
   check_signing_key
 
   if ((DRY_RUN)); then
@@ -472,4 +539,5 @@ main() {
   log "Open a new terminal so zsh reads ~/.config/zsh."
 }
 
-main "$@"
+# Tests source this file for its functions.
+[[ "${DOTFILES_SOURCE_ONLY:-0}" == 1 ]] || main "$@"

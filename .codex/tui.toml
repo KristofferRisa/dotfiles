@@ -1,0 +1,15 @@
+# Codex CLI [tui] keys. install.sh merges these into ~/.codex/config.toml;
+# it does not link the file. Codex writes trusted project paths into that file,
+# and those must not end up in this public repo.
+#
+# One key per line, value on the same line. A key the machine already has
+# under [tui] (say, from /statusline) is left alone.
+#
+# Codex's status line takes only its own items, not a command, so there is no
+# script here. cx (.config/zsh/codex.zsh) adds the Synapse panel beside it.
+# Items: project-name, current-dir, git-branch, model-with-reasoning, reasoning,
+# context-used, context-remaining, five-hour-limit, weekly-limit, used-tokens,
+# total-input-tokens, total-output-tokens, run-state, thread-title, thread-id,
+# codex-version, fast-mode, task-progress. `codex doctor` flags unknown ones.
+status_line = ["project-name", "git-branch", "model-with-reasoning", "context-used", "five-hour-limit", "weekly-limit", "used-tokens"]
+terminal_title = ["project-name", "run-state"]
