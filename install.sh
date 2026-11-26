@@ -324,6 +324,45 @@ setup_zshenv() {
   fi
 }
 
+# Agents leave Go, Cargo, npm and Playwright caches in /tmp, which on Linux
+# sits on the system disk and is only emptied on reboot; a VM filled up from
+# it. macOS clears /tmp itself, so this is Linux only. The cron line is
+# written with a literal $HOME, so a run against a throwaway home matches the
+# same line and adds no second one.
+setup_tmp_cleanup() {
+  local script="$DOTFILES_DIR/bin/tmp-cache-cleanup"
+  local link="$HOME/.local/bin/tmp-cache-cleanup"
+  # shellcheck disable=SC2016
+  local cron_line='15 4 * * * $HOME/.local/bin/tmp-cache-cleanup'
+
+  [[ "$(uname -s)" == Linux && -f "$script" ]] || return 0
+
+  if [[ -L "$link" && "$(readlink "$link")" == "$script" ]]; then
+    log "$link already links to $script"
+  else
+    run mkdir -p "$(dirname "$link")"
+    if [[ -e "$link" || -L "$link" ]]; then
+      back_up_conflicts "$HOME" ".local/bin/tmp-cache-cleanup"
+    fi
+    run ln -s "$script" "$link"
+    ((DRY_RUN)) || log "Linked $link -> $script"
+  fi
+
+  if ! command -v crontab >/dev/null 2>&1; then
+    log "No crontab on this machine; run $link by hand or from a timer."
+  elif crontab -l 2>/dev/null | grep -qxF "$cron_line"; then
+    log "Daily /tmp cache cleanup already in crontab"
+  elif ((DRY_RUN)); then
+    log "  would add to crontab: $cron_line"
+  else
+    {
+      crontab -l 2>/dev/null || true
+      printf '%s\n' "$cron_line"
+    } | crontab -
+    log "Added daily /tmp cache cleanup to crontab"
+  fi
+}
+
 # .config/git/config signs every commit with GPG, so without the key on this
 # machine every commit fails. A machine can sign with SSH instead through
 # config.local or ~/.gitconfig. Getting the key there is the user's call; say how.
@@ -460,6 +499,7 @@ main() {
   fi
   link_home_zshrc
   setup_zshenv
+  setup_tmp_cleanup
   check_signing_key
 
   if ((DRY_RUN)); then

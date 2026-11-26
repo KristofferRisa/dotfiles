@@ -15,6 +15,7 @@ Personal dotfiles. GNU Stow symlinks `.config` into `~/.config`, `.claude` into 
 - Installs dependencies. macOS: Homebrew if needed, then `BREW_PACKAGES` (stow, jq, lazygit, tmux, neovim, sky). Linux: `LINUX_PACKAGES` (git, stow, zsh, tmux) via apt, pacman, or dnf.
 - Installs Oh My Zsh (to `~/.oh-my-zsh`) and Powerlevel10k when missing. The Oh My Zsh installer must be called with `ZDOTDIR` empty and `--keep-zshrc`, or it overwrites the symlinked `.zshrc`.
 - Links `.config`, `.claude`, and `.grok` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted. `.grok` only carries `config.toml` (`[cli]` and `[ui]`) and the status line. Sessions, auth, and logs stay in `~/.grok` and are not part of this package.
+- On Linux, links `bin/tmp-cache-cleanup` into `~/.local/bin` and adds a daily crontab line for it (`$HOME` written literally, so a throwaway-home run matches the same line). It deletes stale agent build caches in `/tmp`, which on Linux is on the system disk.
 - Adds `ZDOTDIR` to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`, so `.zshrc` puts Homebrew on `PATH` itself.
 - Links `~/.zshrc` to `~/.config/zsh/.zshrc` (backing up whatever was there). zsh never reads it while `ZDOTDIR` is set, but Claude Code's shell snapshot and tool installers (nvm, rustup, grok) hardcode `~/.zshrc`; a stale copy there gives them a different shell than the terminal. Lines those installers append land in the repo `.zshrc`, so they show up in `git status`.
 
@@ -54,6 +55,9 @@ stow -R -t ~/.config .config
 .github/
 ├── workflows/         # CI, PR labeler
 └── ISSUE_TEMPLATE/    # Bug, new-machine setup, config change
+
+bin/
+└── tmp-cache-cleanup  # Linux: daily /tmp build-cache cleanup, linked into ~/.local/bin
 
 tests/statusline/      # Fixture tests for the Claude status line cost math
 tests/grok-statusline/ # Grok status line rows, including Synapse
