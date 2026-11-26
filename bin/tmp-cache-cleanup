@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Deletes build caches that agents leave in /tmp (Go, Cargo, npm, uv, Playwright, …).
+# /tmp is on the system disk and is only emptied on reboot. Run daily from crontab.
+# Only top-level folders owned by this user, whose names look like a cache or a build
+# target, and where nothing inside has changed for DAYS days. Never Claude Code's own
+# folders (claude-*). DRY_RUN=1 lists what it would delete.
+set -uo pipefail
+DAYS="${DAYS:-3}"
+pat='(cache|target|gomod|go-mod|go-build|gobuild|cargo|playwright|npm|uv-|pnpm|rustup|node-compile)'
+log="${XDG_CACHE_HOME:-$HOME/.cache}/tmp-cache-cleanup.log"
+mkdir -p "$(dirname "$log")"
+freed=0
+for d in /tmp/*/; do
+  d="${d%/}"; n="$(basename "$d")"
+  [[ -L "$d" || "$n" == claude-* ]] && continue
+  [[ "$(stat -c %U "$d" 2>/dev/null)" == "$(id -un)" ]] || continue
+  [[ "$n" =~ $pat ]] || continue
+  [[ -n "$(find "$d" -newermt "-$DAYS days" -print -quit 2>/dev/null)" ]] && continue
+  kb="$(du -xsk "$d" 2>/dev/null | cut -f1)"
+  if [[ "${DRY_RUN:-0}" == 1 ]]; then echo "would delete $d (${kb:-0} KB)"; continue; fi
+  chmod -R u+w "$d" 2>/dev/null   # Go's module cache is read-only
+  rm -rf -- "$d" && freed=$((freed + ${kb:-0}))
+done
+[[ "${DRY_RUN:-0}" == 1 ]] || echo "$(date -Is) freed $((freed / 1024)) MB; / has $(df -h --output=avail / | tail -1 | tr -d ' ') free" >> "$log"

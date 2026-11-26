@@ -66,7 +66,11 @@ Same as `git pull && ./install.sh`, or re-run the one-liner, which does both.
 ├── config.toml    # Grok Build [cli] and [ui], including the status line
 ├── statusline.sh
 └── statusline/    # Grok Build status line (bash + jq): project, cost, Synapse
+bin/
+└── tmp-cache-cleanup  # Linux: daily cron that deletes stale build caches in /tmp
 ```
+
+On Linux the installer links `bin/tmp-cache-cleanup` into `~/.local/bin` and adds it to your crontab (04:15 daily). It deletes your own top-level `/tmp` folders whose names look like a cache or build target (Go, Cargo, npm, uv, Playwright) and that have not changed in 3 days, and never Claude Code's `claude-*` folders. On Linux, `/tmp` sits on the system disk and is only emptied on reboot. `DRY_RUN=1 tmp-cache-cleanup` lists what it would delete, `DAYS=7` changes the age, and `~/.cache/tmp-cache-cleanup.log` records each run.
 
 The first `nvim` launch installs every plugin. Give it a minute.
 

@@ -20,7 +20,7 @@ CI runs all of this, but it is faster to catch it locally.
 
 | Changed | Check |
 | --- | --- |
-| `install.sh` | `shellcheck install.sh` and `shfmt -d -i 2 -ci install.sh` |
+| `install.sh`, `bin/` | `shellcheck install.sh bin/tmp-cache-cleanup` and `shfmt -d -i 2 -ci install.sh` |
 | `install.sh` | Run it against a fake home, twice (see below) |
 | zsh files | `zsh -n <file>`, then open a new shell and read any warnings |
 | `tmux.conf` | `tmux source-file ~/.config/tmux/tmux.conf` in a running session |
