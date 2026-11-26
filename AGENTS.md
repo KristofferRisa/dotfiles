@@ -6,7 +6,7 @@ Guidance for AI coding agents (Claude Code, OpenCode, and others) working in thi
 
 ## Repository Overview
 
-Personal dotfiles. GNU Stow symlinks `.config` into `~/.config`, `.claude` into `~/.claude`, and `.grok` into `~/.grok`, so the files here are the live config on every machine that ran the installer. A broken file here breaks a real shell.
+Personal dotfiles. GNU Stow symlinks `.config` into `~/.config`, `.claude` into `~/.claude`, `.grok` into `~/.grok`, and `.agy` into `~/.gemini/antigravity-cli`, so the files here are the live config on every machine that ran the installer. A broken file here breaks a real shell.
 
 ## Installation
 
@@ -14,7 +14,7 @@ Personal dotfiles. GNU Stow symlinks `.config` into `~/.config`, `.claude` into 
 
 - Installs dependencies. macOS: Homebrew if needed, then `BREW_PACKAGES` (stow, jq, lazygit, tmux, neovim, sky). Linux: `LINUX_PACKAGES` (git, stow, zsh, tmux) via apt, pacman, or dnf.
 - Installs Oh My Zsh (to `~/.oh-my-zsh`) and Powerlevel10k when missing. The Oh My Zsh installer must be called with `ZDOTDIR` empty and `--keep-zshrc`, or it overwrites the symlinked `.zshrc`.
-- Links `.config`, `.claude`, and `.grok` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted. `.grok` only carries `config.toml` (`[cli]` and `[ui]`) and the status line. Sessions, auth, and logs stay in `~/.grok` and are not part of this package.
+- Links `.config`, `.claude`, `.grok`, and `.agy` with Stow. Files in the way are moved to `~/.dotfiles-backup/<timestamp>/`, never deleted. `.grok` only carries `config.toml` (`[cli]` and `[ui]`) and the status line. Sessions, auth, and logs stay in `~/.grok` and are not part of this package. `.agy` carries only the status line scripts; `configure_agy` merges `statusLine` into `~/.gemini/antigravity-cli/settings.json` (mode `0600`) when unset so machine-local keys (`trustedWorkspaces`, `permissions`) never enter this public repo.
 - On Linux, links `bin/tmp-cache-cleanup` into `~/.local/bin` and adds a daily crontab line for it (`$HOME` written literally, so a throwaway-home run matches the same line). It deletes stale agent build caches in `/tmp`, which on Linux is on the system disk.
 - Adds `ZDOTDIR` to `~/.zshenv`. `ZDOTDIR` makes zsh skip `~/.zprofile`, so `.zshrc` puts Homebrew on `PATH` itself.
 - Links `~/.zshrc` to `~/.config/zsh/.zshrc` (backing up whatever was there). zsh never reads it while `ZDOTDIR` is set, but Claude Code's shell snapshot and tool installers (nvm, rustup, grok) hardcode `~/.zshrc`; a stale copy there gives them a different shell than the terminal. Lines those installers append land in the repo `.zshrc`, so they show up in `git status`.
@@ -52,6 +52,10 @@ stow -R -t ~/.config .config
 ├── statusline.sh      # Entry point Grok runs
 └── statusline/        # render.jq
 
+.agy/
+├── statusline.sh      # Entry point Antigravity CLI runs
+└── statusline/        # render.jq (full + --compact panel, quotas, Synapse)
+
 .github/
 ├── workflows/         # CI, PR labeler
 └── ISSUE_TEMPLATE/    # Bug, new-machine setup, config change
@@ -61,6 +65,7 @@ bin/
 
 tests/statusline/      # Fixture tests for the Claude status line cost math
 tests/grok-statusline/ # Grok status line rows, including Synapse
+tests/agy-statusline/  # Antigravity status line rows and configure_agy merge tests
 ```
 
 ### Shell Environment
@@ -104,6 +109,13 @@ tests/grok-statusline/ # Grok status line rows, including Synapse
 - IMPACT is the area's last 7 days: sessions, how many wrote back, and average size. It appears only when that cache carries an impact. A directory with no area still gets a SYNAPSE row
 - Weather uses the same `sky` CLI, and only on a `refresh_interval` run. A background fetch would be killed when the script exits. The weather stamp lasts 10 minutes
 - Today's cost sums `usage.json` turns ended after local midnight. `costUsdTicks` is 10¹⁰ per USD
+
+### Antigravity CLI status line (`.agy/`)
+
+- `statusline.sh` reads `agy`'s JSON on stdin and draws the same Catppuccin Mocha framed panel as Claude Code: header (weather via `sky`, date/time, `AGY <version>`, mode/sandbox/vim), PROJECT (folder, git, model + effort, active agent), CONTEXT (24-cell gauge + tokens), quota rows (`7 DAY`, `5 HOUR`, etc., with pace bars and reset countdowns), SESSION (estimated cost, output tokens, cache hit rate, subagents/tasks/artifacts), and optional SYNAPSE / AGENTS / IMPACT rows when `synapse` is installed
+- `--compact` (or `AGY_STATUSLINE_COMPACT=1`) folds context onto PROJECT, quotas onto one QUOTA row, session onto COST, and keeps only the SYNAPSE summary row
+- Weather (`~/.cache/agy-statusline/weather.json`) and Synapse context (`~/.cache/synapse/context/<session>.json`) refresh asynchronously in the background (with a lock dir for Synapse and 10-minute stamp for weather), so redraws stay fast and never block on the network. `refresh_synapse` tries `--harness agy` and falls back to `--harness grok` on older `synapse` checkouts
+- `install.sh` merges only `statusLine` into `~/.gemini/antigravity-cli/settings.json` when unset, preserving existing settings and `0600` permissions
 
 ## Notes for Future Modifications
 
