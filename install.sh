@@ -363,6 +363,50 @@ setup_tmp_cleanup() {
   fi
 }
 
+# Antigravity CLI writes trustedWorkspaces, permissions, and model state into
+# ~/.gemini/antigravity-cli/settings.json, so that file cannot be a symlink into
+# this public repo. Merge only statusLine when unset, keeping mode 0600.
+configure_agy() {
+  local dir="${AGY_CONFIG_DIR:-$HOME/.gemini/antigravity-cli}"
+  local settings="$dir/settings.json"
+  # Written literally: agy expands a leading ~ in statusLine.command.
+  # shellcheck disable=SC2088
+  local cmd='bash ~/.gemini/antigravity-cli/statusline.sh'
+  local tmp
+
+  if ! command -v jq >/dev/null 2>&1; then
+    log "jq is not installed yet, skipping Antigravity statusLine setup"
+    return 0
+  fi
+
+  if [[ -f "$settings" ]]; then
+    if ! jq empty "$settings" >/dev/null 2>&1; then
+      log "Warning: $settings is not valid JSON; leaving Antigravity statusLine untouched"
+      return 0
+    fi
+    if jq -e '(.statusLine.command? // "") != ""' "$settings" >/dev/null 2>&1; then
+      log "Antigravity statusLine already set in $settings"
+      return 0
+    fi
+  fi
+
+  if ((DRY_RUN)); then
+    log "  would set Antigravity statusLine in $settings"
+    return 0
+  fi
+
+  mkdir -p "$dir"
+  tmp="$(mktemp "$dir/.settings.json.XXXXXX")"
+  if [[ -f "$settings" ]]; then
+    jq --arg cmd "$cmd" '. + {statusLine: {type: "command", command: $cmd, padding: 0}}' "$settings" >"$tmp"
+  else
+    jq -n --arg cmd "$cmd" '{statusLine: {type: "command", command: $cmd, padding: 0}}' >"$tmp"
+  fi
+  chmod 600 "$tmp"
+  mv -f "$tmp" "$settings"
+  log "Set Antigravity statusLine in $settings"
+}
+
 # .config/git/config signs every commit with GPG, so without the key on this
 # machine every commit fails. A machine can sign with SSH instead through
 # config.local or ~/.gitconfig. Getting the key there is the user's call; say how.
@@ -496,10 +540,12 @@ main() {
     stow_package .config "$HOME/.config"
     stow_package .claude "$HOME/.claude"
     stow_package .grok "$HOME/.grok"
+    stow_package .agy "$HOME/.gemini/antigravity-cli"
   fi
   link_home_zshrc
   setup_zshenv
   setup_tmp_cleanup
+  configure_agy
   check_signing_key
 
   if ((DRY_RUN)); then
@@ -512,4 +558,5 @@ main() {
   log "Open a new terminal so zsh reads ~/.config/zsh."
 }
 
-main "$@"
+# Tests source this file for its functions.
+[[ "${DOTFILES_SOURCE_ONLY:-0}" == 1 ]] || main "$@"
