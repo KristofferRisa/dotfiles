@@ -1,20 +1,68 @@
 {
   "statusLine": {
     "type": "command",
-    "command": "bash ~/.claude/statusline/statusline.sh",
+    "command": "s=\"$HOME/code/synapse/apps/cli/statusline/synapse-statusline.sh\"; if [ -f \"$s\" ]; then exec bash \"$s\" --harness claude-code; else exec bash \"$HOME/.claude/statusline/statusline.sh\"; fi",
     "padding": 0
   },
   "enabledPlugins": {
     "pyright-lsp@claude-plugins-official": true,
-    "gopls-lsp@claude-plugins-official": true
+    "gopls-lsp@claude-plugins-official": true,
+    "cloudflare@cloudflare": true,
+    "synapse-context@synapse": true
   },
   "alwaysThinkingEnabled": true,
   "tui": "fullscreen",
-  "model": "sonnet",
+  "model": "opus",
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
   "attribution": {
     "commit": "",
     "pr": ""
-  }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "PATH=/opt/homebrew/bin:/usr/local/bin:/home/linuxbrew/.linuxbrew/bin:$PATH \"$HOME/.local/bin/synapse\" hot start --hook --harness claude-code 2>/dev/null || true",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "PATH=/opt/homebrew/bin:/usr/local/bin:/home/linuxbrew/.linuxbrew/bin:$PATH \"$HOME/.local/bin/synapse\" hot end --hook --harness claude-code 2>/dev/null || true",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/code/synapse/apps/cli/hooks/progress-hook.sh\" --harness claude-code 2>/dev/null || true",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "cloudflare": {
+      "source": {
+        "source": "github",
+        "repo": "cloudflare/skills"
+      }
+    }
+  },
+  "skipDangerousModePermissionPrompt": true
 }
